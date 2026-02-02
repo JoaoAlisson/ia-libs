@@ -167,6 +167,7 @@
             margin-left: 260px;
             margin-top: 57px;
             padding: 2rem;
+            padding-bottom: 5rem;
             min-height: calc(100vh - 57px);
             max-width: 1200px;
         }
@@ -490,6 +491,73 @@
         }
         
         .overlay.open { display: block; }
+        
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 260px;
+            right: 0;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8125rem;
+            z-index: 100;
+        }
+        
+        .footer-info {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-info i {
+            color: var(--primary-light);
+        }
+        
+        .footer-info strong {
+            color: var(--text-primary);
+        }
+        
+        .footer-link {
+            color: var(--accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 1024px) {
+            .footer {
+                left: 0;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .footer {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.75rem 1rem;
+                text-align: center;
+            }
+            
+            .footer-info {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .main {
+                padding-bottom: 6rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -527,21 +595,30 @@
                 <i class="nav-icon fas fa-envelope"></i> Comunicação
             </a>
             <a class="nav-item" onclick="showSection('cat5', this)">
-                <i class="nav-icon fas fa-bolt"></i> Produtividade
-            </a>
-            <a class="nav-item" onclick="showSection('cat6', this)">
                 <i class="nav-icon fas fa-handshake"></i> Negociação
             </a>
+            <a class="nav-item" onclick="showSection('cat6', this)">
+                <i class="nav-icon fas fa-briefcase"></i> Business
+            </a>
             <a class="nav-item" onclick="showSection('cat7', this)">
-                <i class="nav-icon fas fa-lightbulb"></i> Inovação
+                <i class="nav-icon fas fa-database"></i> Análise de Dados
             </a>
             <a class="nav-item" onclick="showSection('cat8', this)">
-                <i class="nav-icon fas fa-bullseye"></i> Desenvolvimento
+                <i class="nav-icon fas fa-file-alt"></i> Relatórios
             </a>
             <a class="nav-item" onclick="showSection('cat9', this)">
-                <i class="nav-icon fas fa-book"></i> Estudo
+                <i class="nav-icon fas fa-bolt"></i> Produtividade
             </a>
             <a class="nav-item" onclick="showSection('cat10', this)">
+                <i class="nav-icon fas fa-lightbulb"></i> Inovação
+            </a>
+            <a class="nav-item" onclick="showSection('cat11', this)">
+                <i class="nav-icon fas fa-bullseye"></i> Desenvolvimento
+            </a>
+            <a class="nav-item" onclick="showSection('cat12', this)">
+                <i class="nav-icon fas fa-book"></i> Estudo
+            </a>
+            <a class="nav-item" onclick="showSection('cat13', this)">
                 <i class="nav-icon fas fa-wand-magic-sparkles"></i> Técnicas Avançadas
             </a>
         </div>
@@ -597,41 +674,62 @@
                     </div>
                 </div>
                 <div class="category-card" onclick="showSection('cat5', document.querySelectorAll('.nav-item')[5])">
-                    <div class="category-icon"><i class="fas fa-bolt"></i></div>
-                    <div class="category-info">
-                        <h4>Produtividade</h4>
-                        <p>Delegação, reuniões, documentos</p>
-                    </div>
-                </div>
-                <div class="category-card" onclick="showSection('cat6', document.querySelectorAll('.nav-item')[6])">
                     <div class="category-icon"><i class="fas fa-handshake"></i></div>
                     <div class="category-info">
                         <h4>Vendas e Negociação</h4>
                         <p>BATNA, táticas, preparação</p>
                     </div>
                 </div>
+                <div class="category-card" onclick="showSection('cat6', document.querySelectorAll('.nav-item')[6])">
+                    <div class="category-icon"><i class="fas fa-briefcase"></i></div>
+                    <div class="category-info">
+                        <h4>Business</h4>
+                        <p>Modelos de negócio, pitch, growth</p>
+                    </div>
+                </div>
                 <div class="category-card" onclick="showSection('cat7', document.querySelectorAll('.nav-item')[7])">
+                    <div class="category-icon"><i class="fas fa-database"></i></div>
+                    <div class="category-info">
+                        <h4>Análise de Dados</h4>
+                        <p>Insights, dashboards, SQL</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat8', document.querySelectorAll('.nav-item')[8])">
+                    <div class="category-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="category-info">
+                        <h4>Relatórios</h4>
+                        <p>Atas, relatórios, documentos</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat9', document.querySelectorAll('.nav-item')[9])">
+                    <div class="category-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="category-info">
+                        <h4>Produtividade</h4>
+                        <p>Delegação, reuniões, documentos</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat10', document.querySelectorAll('.nav-item')[10])">
                     <div class="category-icon"><i class="fas fa-lightbulb"></i></div>
                     <div class="category-info">
                         <h4>Inovação e Projetos</h4>
                         <p>Validação de ideias, riscos</p>
                     </div>
                 </div>
-                <div class="category-card" onclick="showSection('cat8', document.querySelectorAll('.nav-item')[8])">
+                <div class="category-card" onclick="showSection('cat11', document.querySelectorAll('.nav-item')[11])">
                     <div class="category-icon"><i class="fas fa-bullseye"></i></div>
                     <div class="category-info">
                         <h4>Desenvolvimento Pessoal</h4>
                         <p>Mentoria, coaching, reflexão</p>
                     </div>
                 </div>
-                <div class="category-card" onclick="showSection('cat9', document.querySelectorAll('.nav-item')[9])">
+                <div class="category-card" onclick="showSection('cat12', document.querySelectorAll('.nav-item')[12])">
                     <div class="category-icon"><i class="fas fa-book"></i></div>
                     <div class="category-info">
                         <h4>Estudo</h4>
                         <p>Aprendizado acelerado, técnicas</p>
                     </div>
                 </div>
-                <div class="category-card" onclick="showSection('cat10', document.querySelectorAll('.nav-item')[10])">
+                <div class="category-card" onclick="showSection('cat13', document.querySelectorAll('.nav-item')[13])">
                     <div class="category-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
                     <div class="category-info">
                         <h4>Técnicas Avançadas</h4>
@@ -1331,8 +1429,8 @@ Resumo executivo + plano acionável.</pre>
             </div>
         </section>
         
-        <!-- Category 5: Produtividade -->
-        <section id="cat5" class="section">
+        <!-- Category 9: Produtividade -->
+        <section id="cat9" class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="fas fa-bolt"></i></div>
                 <h2>Produtividade e Organização</h2>
@@ -1486,8 +1584,8 @@ Resumo executivo + plano acionável.</pre>
             </div>
         </section>
         
-        <!-- Category 6: Vendas -->
-        <section id="cat6" class="section">
+        <!-- Category 5: Vendas -->
+        <section id="cat5" class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="fas fa-handshake"></i></div>
                 <h2>Vendas e Negociação</h2>
@@ -1570,8 +1668,8 @@ Resumo executivo + plano acionável.</pre>
             </div>
         </section>
         
-        <!-- Category 7: Inovação -->
-        <section id="cat7" class="section">
+        <!-- Category 10: Inovação -->
+        <section id="cat10" class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="fas fa-lightbulb"></i></div>
                 <h2>Inovação e Projetos</h2>
@@ -1654,8 +1752,8 @@ Resumo executivo + plano acionável.</pre>
             </div>
         </section>
         
-        <!-- Category 8: Desenvolvimento Pessoal -->
-        <section id="cat8" class="section">
+        <!-- Category 11: Desenvolvimento Pessoal -->
+        <section id="cat11" class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="fas fa-bullseye"></i></div>
                 <h2>Desenvolvimento Pessoal</h2>
@@ -1740,8 +1838,8 @@ Resumo executivo + plano acionável.</pre>
             </div>
         </section>
         
-        <!-- Category 9: Estudo -->
-        <section id="cat9" class="section">
+        <!-- Category 12: Estudo -->
+        <section id="cat12" class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="fas fa-book"></i></div>
                 <h2>Estudo</h2>
@@ -1901,8 +1999,536 @@ Resumo executivo + plano acionável.</pre>
             </div>
         </section>
         
-        <!-- Category 10: Técnicas Avançadas -->
-        <section id="cat10" class="section">
+        <!-- Category 6: Business -->
+        <section id="cat6" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-briefcase"></i></div>
+                <h2>Business</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">10.1 Análise de Modelo de Negócio</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Analise e otimize seu modelo de negócio usando frameworks estratégicos como Business Model Canvas e Value Proposition.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um consultor de estratégia de negócios com experiência em startups e scale-ups, especializado em Business Model Canvas e inovação em modelos de negócio.
+
+# CONTEXTO
+Empresa/Produto: [nome e descrição]
+Estágio: [ideia / MVP / tração / escala]
+Mercado: [B2B / B2C / B2B2C]
+Principal desafio: [o que quer resolver]
+
+# TAREFA
+Analise e otimize o modelo de negócio.
+
+# INSTRUÇÕES (Chain-of-Thought)
+1. ANÁLISE DO MODELO ATUAL
+   - Business Model Canvas completo
+   - Identificação de gaps e inconsistências
+   - Análise de unit economics
+
+2. PROPOSTA DE VALOR
+   - Jobs to be done do cliente
+   - Pains e gains mapeados
+   - Diferencial competitivo claro
+
+3. FONTES DE RECEITA
+   - Modelos de monetização alternativos
+   - Pricing strategy sugerido
+   - Projeção de LTV/CAC
+
+4. RECOMENDAÇÕES
+   - Quick wins (próximos 30 dias)
+   - Iniciativas de médio prazo (90 dias)
+   - Visão de longo prazo
+
+# OUTPUT
+Canvas visual formatado + análise executiva + plano de ação.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Business Model Canvas</span>
+                        <span class="tag">Strategy</span>
+                        <span class="tag">Value Proposition</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">10.2 Pitch Deck e Apresentação para Investidores</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Crie um pitch deck persuasivo e estruturado para captar investimentos ou apresentar sua empresa.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista em fundraising que já ajudou startups a levantar mais de R$500M em investimentos. Conhece profundamente o que VCs e investidores-anjo procuram.
+
+# CONTEXTO
+Empresa: [nome]
+Estágio: [pre-seed / seed / série A / B]
+Objetivo: [valor que quer captar]
+Tração atual: [métricas principais: MRR, usuários, crescimento]
+
+# INFORMAÇÕES DA EMPRESA
+- Problema: [qual dor resolve]
+- Solução: [como resolve]
+- Mercado: [TAM, SAM, SOM]
+- Concorrência: [principais players]
+- Time: [fundadores e experiência]
+
+# TAREFA
+Crie a estrutura completa de um pitch deck.
+
+# INSTRUÇÕES (Storytelling Framework)
+1. ABERTURA IMPACTANTE
+   - Hook em 1 frase
+   - Estatística ou história que gera urgência
+
+2. SLIDES OBRIGATÓRIOS
+   - Problema (com dados)
+   - Solução (demonstração visual)
+   - Mercado (TAM/SAM/SOM)
+   - Produto (screenshots/demo)
+   - Modelo de negócio
+   - Tração (métricas reais)
+   - Concorrência (posicionamento)
+   - Time (credenciais)
+   - Financeiro (uso do capital)
+   - Ask (o que pede)
+
+3. NARRATIVA
+   - Fio condutor entre slides
+   - Transições suaves
+   - Call to action claro
+
+# OUTPUT
+Estrutura de 12-15 slides com texto sugerido para cada um.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Pitch Deck</span>
+                        <span class="tag">Fundraising</span>
+                        <span class="tag">Storytelling</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">10.3 Estratégia de Growth e Go-to-Market</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Desenvolva uma estratégia completa de crescimento e entrada no mercado para seu produto ou serviço.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um Head de Growth com experiência em escalar produtos de 0 a milhões de usuários, com background em product-led growth e demand generation.
+
+# CONTEXTO
+Produto: [descrição do produto/serviço]
+ICP (Ideal Customer Profile): [descrição do cliente ideal]
+Estágio: [lançamento / growth / escala]
+Budget disponível: [orçamento para marketing/growth]
+Canais atuais: [o que já utiliza]
+
+# TAREFA
+Crie uma estratégia de growth e go-to-market.
+
+# INSTRUÇÕES
+1. ANÁLISE DE MERCADO
+   - Mapeamento de canais por eficiência
+   - Análise de concorrentes (o que funciona)
+   - Oportunidades não exploradas
+
+2. FUNIL DE AQUISIÇÃO
+   - Topo: awareness e atração
+   - Meio: consideração e nutrição
+   - Fundo: conversão e ativação
+
+3. ESTRATÉGIA POR CANAL
+   - Canais prioritários (top 3)
+   - Táticas específicas por canal
+   - Métricas de sucesso (KPIs)
+
+4. GROWTH LOOPS
+   - Loops de viralidade
+   - Loops de conteúdo
+   - Loops de produto
+
+5. ROADMAP DE 90 DIAS
+   - Semanas 1-4: quick wins
+   - Semanas 5-8: otimização
+   - Semanas 9-12: escala
+
+# OUTPUT
+Playbook de growth + cronograma + métricas de acompanhamento.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Growth</span>
+                        <span class="tag">Go-to-Market</span>
+                        <span class="tag">Product-Led Growth</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">10.4 Análise Competitiva e Posicionamento</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Realize uma análise competitiva profunda e defina seu posicionamento estratégico no mercado.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um estrategista de mercado com experiência em competitive intelligence e posicionamento de marca.
+
+# CONTEXTO
+Sua empresa: [nome e descrição]
+Mercado: [setor/nicho]
+Principais concorrentes:
+- [Concorrente 1]: [breve descrição]
+- [Concorrente 2]: [breve descrição]
+- [Concorrente 3]: [breve descrição]
+
+# TAREFA
+Conduza uma análise competitiva completa.
+
+# INSTRUÇÕES (Multi-Framework)
+1. ANÁLISE DE PORTER
+   - 5 forças competitivas
+   - Intensidade de cada força
+   - Implicações estratégicas
+
+2. MAPEAMENTO COMPETITIVO
+   - Feature comparison matrix
+   - Pricing comparison
+   - Pontos fortes/fracos de cada player
+
+3. ANÁLISE DE POSICIONAMENTO
+   - Mapa perceptual (2 eixos relevantes)
+   - White spaces identificados
+   - Oportunidades de diferenciação
+
+4. INTELIGÊNCIA COMPETITIVA
+   - Estratégias que estão funcionando
+   - Movimentos recentes dos concorrentes
+   - Ameaças potenciais
+
+5. RECOMENDAÇÕES DE POSICIONAMENTO
+   - Statement de posicionamento
+   - Mensagens-chave por público
+   - Proof points para cada claim
+
+# OUTPUT
+Relatório executivo + matriz competitiva + statement de posicionamento.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Competitive Analysis</span>
+                        <span class="tag">Porter</span>
+                        <span class="tag">Positioning</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 8: Relatórios -->
+        <section id="cat8" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-file-alt"></i></div>
+                <h2>Relatórios</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">12.1 Ata de Reunião Estruturada</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Crie atas de reunião profissionais e estruturadas a partir de anotações ou transcrições.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um secretário executivo experiente, especializado em documentação corporativa e governança.
+
+# CONTEXTO
+Tipo de reunião: [diária / semanal / comitê / conselho / projeto]
+Participantes: [liste os participantes e cargos]
+Data/Hora: [data e horário]
+Duração: [tempo total]
+
+# ANOTAÇÕES DA REUNIÃO
+[Cole aqui suas anotações brutas ou transcrição]
+
+# TAREFA
+Transforme as anotações em uma ata profissional.
+
+# FORMATO OBRIGATÓRIO
+1. CABEÇALHO
+   - Título da reunião
+   - Data, hora, local/plataforma
+   - Participantes (presentes e ausentes)
+
+2. PAUTA
+   - Tópicos discutidos (numerados)
+
+3. DISCUSSÕES
+   - Resumo objetivo de cada tópico
+   - Pontos de vista apresentados
+   - Decisões tomadas
+
+4. AÇÕES (ACTION ITEMS)
+   | Ação | Responsável | Prazo | Status |
+   (Tabela com todas as ações definidas)
+
+5. PRÓXIMOS PASSOS
+   - Data da próxima reunião
+   - Pauta preliminar
+
+# OUTPUT
+Ata formatada pronta para distribuição.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Ata</span>
+                        <span class="tag">Reunião</span>
+                        <span class="tag">Documentação</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">12.2 Relatório Executivo</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Crie relatórios executivos concisos e orientados a decisão para a alta gestão.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um analista de negócios sênior que prepara relatórios para C-Level e conselho.
+
+# CONTEXTO
+Tipo de relatório: [status de projeto / mensal / trimestral / incidente / análise]
+Área: [departamento ou projeto]
+Período: [período coberto]
+Destinatários: [quem vai ler]
+
+# DADOS E INFORMAÇÕES
+[Cole aqui os dados brutos, métricas, eventos relevantes]
+
+# TAREFA
+Elabore um relatório executivo.
+
+# ESTRUTURA (Pyramid Principle)
+1. EXECUTIVE SUMMARY (1 parágrafo)
+   - Conclusão principal primeiro
+   - Status geral (verde/amarelo/vermelho)
+   - Números-chave
+
+2. HIGHLIGHTS DO PERÍODO
+   - Top 3 conquistas
+   - Top 3 desafios
+
+3. MÉTRICAS E KPIs
+   - Tabela com indicadores vs meta
+   - Tendência (seta para cima/baixo)
+   - Comentário breve por métrica
+
+4. ANÁLISE DE DESVIOS
+   - O que saiu do planejado
+   - Causa raiz
+   - Ações corretivas
+
+5. RISCOS E MITIGAÇÕES
+   - Riscos identificados (alto/médio/baixo)
+   - Plano de mitigação
+
+6. PRÓXIMOS PASSOS
+   - Ações planejadas
+   - Decisões necessárias
+
+# OUTPUT
+Relatório de máximo 2 páginas, visual e escaneável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Relatório</span>
+                        <span class="tag">Pyramid Principle</span>
+                        <span class="tag">Executive Summary</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">12.3 Relatório de Status de Projeto</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Gere relatórios de acompanhamento de projeto no formato padrão PMO.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um gerente de projetos certificado PMP com experiência em report para stakeholders.
+
+# CONTEXTO
+Projeto: [nome do projeto]
+Sponsor: [quem é o sponsor]
+Período do report: [semana/mês]
+Fase atual: [iniciação / planejamento / execução / encerramento]
+
+# INFORMAÇÕES DO PROJETO
+- Cronograma: [% concluído, previsão vs realizado]
+- Orçamento: [gasto vs aprovado]
+- Escopo: [mudanças, CRs pendentes]
+- Entregas recentes: [o que foi entregue]
+- Próximas entregas: [o que vem pela frente]
+
+# TAREFA
+Crie um status report de projeto.
+
+# FORMATO
+1. DASHBOARD (visão rápida)
+   - Status geral: 🟢 🟡 🔴
+   - Cronograma: 🟢 🟡 🔴
+   - Orçamento: 🟢 🟡 🔴
+   - Escopo: 🟢 🟡 🔴
+   - Qualidade: 🟢 🟡 🔴
+
+2. RESUMO EXECUTIVO
+   - 3 bullets máximo
+
+3. MARCOS (MILESTONES)
+   | Marco | Data Planejada | Data Real | Status |
+
+4. O QUE FOI FEITO
+   - Lista de entregas do período
+
+5. O QUE SERÁ FEITO
+   - Próximas atividades
+
+6. IMPEDIMENTOS E RISCOS
+   - Bloqueios atuais
+   - Riscos materializados
+   - Escalations necessários
+
+7. DECISÕES NECESSÁRIAS
+   - O que precisa de aprovação
+
+# OUTPUT
+Report de 1 página, formato visual.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Status Report</span>
+                        <span class="tag">PMO</span>
+                        <span class="tag">Projeto</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">12.4 Relatório de Análise e Recomendações</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Elabore relatórios analíticos com recomendações estruturadas para tomada de decisão.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um consultor estratégico que prepara relatórios de análise para apoiar decisões de negócio.
+
+# CONTEXTO
+Tema da análise: [o que está sendo analisado]
+Motivo: [por que essa análise é necessária]
+Decisão a ser tomada: [qual decisão esse relatório vai apoiar]
+Stakeholders: [quem vai usar esse relatório]
+
+# DADOS E INFORMAÇÕES
+[Cole aqui os dados, pesquisas, evidências coletadas]
+
+# TAREFA
+Elabore um relatório de análise com recomendações.
+
+# ESTRUTURA (MECE + Pyramid)
+1. EXECUTIVE SUMMARY
+   - Recomendação principal (1 frase)
+   - Por que (justificativa em 2-3 bullets)
+
+2. CONTEXTO E OBJETIVOS
+   - Background
+   - Escopo da análise
+   - Perguntas a serem respondidas
+
+3. METODOLOGIA
+   - Como a análise foi conduzida
+   - Fontes de dados
+   - Limitações
+
+4. DESCOBERTAS PRINCIPAIS
+   - Insight 1 + evidência
+   - Insight 2 + evidência
+   - Insight 3 + evidência
+   (Estrutura MECE - mutuamente excludente, coletivamente exaustivo)
+
+5. OPTIONS ANALYSIS
+   | Opção | Prós | Contras | Risco | Custo | Recomendação |
+
+6. RECOMENDAÇÕES
+   - Recomendação principal
+   - Passos para implementação
+   - Quick wins
+
+7. APÊNDICES
+   - Dados detalhados
+   - Análises complementares
+
+# OUTPUT
+Relatório estruturado com main body + apêndices técnicos.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Análise</span>
+                        <span class="tag">MECE</span>
+                        <span class="tag">Recomendações</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 13: Técnicas Avançadas -->
+        <section id="cat13" class="section">
             <div class="section-header">
                 <div class="section-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
                 <h2>Técnicas Avançadas</h2>
@@ -2074,6 +2700,236 @@ Resumo executivo + plano acionável.</pre>
                 </div>
             </div>
         </section>
+        
+        <!-- Category 7: Análise de Dados -->
+        <section id="cat7" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-database"></i></div>
+                <h2>Análise de Dados</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">11.1 Análise Exploratória de Dados</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Realize uma análise exploratória completa de um conjunto de dados para identificar padrões, anomalias e insights iniciais.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um Data Scientist sênior com 15 anos de experiência em análise de dados empresariais e storytelling com dados.
+
+# CONTEXTO
+Conjunto de dados: [descreva o dataset - origem, tamanho, período]
+Objetivo de negócio: [qual pergunta quer responder]
+Público-alvo: [quem vai consumir a análise]
+
+# DADOS
+[Cole aqui uma amostra dos dados ou descreva as colunas]
+
+# TAREFA
+Realize uma análise exploratória completa (EDA).
+
+# INSTRUÇÕES (Chain-of-Thought)
+1. ENTENDIMENTO DOS DADOS
+   - Tipos de variáveis (categóricas, numéricas, temporais)
+   - Estatísticas descritivas básicas
+   - Verificação de valores missing e duplicados
+
+2. ANÁLISE UNIVARIADA
+   - Distribuição de cada variável relevante
+   - Outliers e anomalias
+
+3. ANÁLISE BIVARIADA/MULTIVARIADA
+   - Correlações importantes
+   - Padrões e tendências
+
+4. INSIGHTS E RECOMENDAÇÕES
+   - Top 5 descobertas mais relevantes
+   - Próximos passos sugeridos
+
+# OUTPUT
+Apresente em formato executivo com visualizações sugeridas.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Chain-of-Thought</span>
+                        <span class="tag">EDA</span>
+                        <span class="tag">Data Science</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">11.2 Criação de Dashboard e KPIs</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Planeje e estruture um dashboard executivo com os KPIs mais relevantes para seu negócio.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista em Business Intelligence e Data Visualization com experiência em Tableau, Power BI e ferramentas de analytics.
+
+# CONTEXTO
+Área de negócio: [vendas / marketing / operações / financeiro / RH]
+Objetivos estratégicos: [principais metas da área]
+Fontes de dados disponíveis: [sistemas, bases, APIs]
+
+# TAREFA
+Crie a estrutura completa de um dashboard executivo.
+
+# INSTRUÇÕES
+1. DEFINIÇÃO DE KPIs
+   - KPIs primários (3-5 métricas críticas)
+   - KPIs secundários (métricas de suporte)
+   - Metas e benchmarks para cada KPI
+
+2. HIERARQUIA DE INFORMAÇÃO
+   - Visão macro (página principal)
+   - Drill-downs por dimensão
+   - Alertas e exceções
+
+3. DESIGN DO DASHBOARD
+   - Layout sugerido (wireframe textual)
+   - Tipos de gráficos recomendados para cada métrica
+   - Filtros e interatividade
+
+4. GOVERNANÇA DE DADOS
+   - Frequência de atualização
+   - Responsáveis por cada métrica
+   - Glossário de termos
+
+# OUTPUT
+Documento estruturado com especificações técnicas e mockup textual.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">BI</span>
+                        <span class="tag">KPIs</span>
+                        <span class="tag">Dashboard</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">11.3 Geração e Otimização de SQL</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Gere queries SQL otimizadas para extração e análise de dados a partir de requisitos de negócio.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um Data Engineer sênior especializado em SQL avançado e otimização de queries em bancos de dados relacionais.
+
+# CONTEXTO
+Banco de dados: [PostgreSQL / MySQL / SQL Server / BigQuery / outro]
+Tabelas disponíveis:
+- [tabela1]: [descrição e colunas principais]
+- [tabela2]: [descrição e colunas principais]
+- [tabela3]: [descrição e colunas principais]
+
+# NECESSIDADE DE NEGÓCIO
+[Descreva em linguagem natural o que precisa extrair/analisar]
+
+# INSTRUÇÕES
+1. ENTENDA O REQUISITO
+   - Identifique as tabelas necessárias
+   - Defina os JOINs apropriados
+   - Determine filtros e agregações
+
+2. GERE A QUERY
+   - SQL completo e funcional
+   - Comentários explicativos
+   - Aliases claros e legíveis
+
+3. OTIMIZAÇÃO
+   - Sugira índices se aplicável
+   - Identifique gargalos potenciais
+   - Versão alternativa se houver ganho de performance
+
+4. VALIDAÇÃO
+   - Query para verificar os resultados
+   - Contagem de registros esperada
+
+# OUTPUT
+Query SQL comentada + explicação da lógica + sugestões de otimização.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">SQL</span>
+                        <span class="tag">Otimização</span>
+                        <span class="tag">Data Engineering</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">11.4 Interpretação de Resultados para Executivos</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Transforme análises técnicas em insights acionáveis para apresentação a stakeholders não-técnicos.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um consultor de analytics que traduz dados complexos em narrativas de negócio claras e acionáveis.
+
+# CONTEXTO
+Análise realizada: [tipo de análise - regressão, clustering, séries temporais, etc.]
+Público: [C-Level / Diretoria / Gerência]
+Decisão em pauta: [qual decisão esses dados devem informar]
+
+# RESULTADOS TÉCNICOS
+[Cole aqui os resultados da análise, outputs estatísticos, métricas]
+
+# TAREFA
+Transforme resultados técnicos em recomendações executivas.
+
+# INSTRUÇÕES (Pyramid Principle)
+1. CONCLUSÃO PRINCIPAL (1 frase)
+   - O "so what" imediato
+
+2. ARGUMENTOS DE SUPORTE (3-4 pontos)
+   - Cada um com evidência do dado
+   - Sem jargão técnico
+
+3. IMPLICAÇÕES PARA O NEGÓCIO
+   - Oportunidades identificadas
+   - Riscos a mitigar
+   - Próximos passos recomendados
+
+4. VISUAL STORYTELLING
+   - Sugira 2-3 visualizações de impacto
+   - Título para cada gráfico (insight, não descrição)
+
+# FORMATO
+- Executive summary (3 bullets)
+- Análise detalhada (1 página)
+- Apêndice técnico (para quem quiser detalhes)</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Storytelling</span>
+                        <span class="tag">Pyramid Principle</span>
+                        <span class="tag">Executive Summary</span>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     
@@ -2114,12 +2970,12 @@ Resumo executivo + plano acionável.</pre>
         }
     </script>
     
-    <footer style="position: fixed; bottom: 0; left: 260px; right: 0; background: var(--bg-surface); border-top: 1px solid var(--border); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem;">
-        <div style="color: var(--text-secondary);">
-            <i class="fas fa-user-tie" style="color: var(--primary-light);"></i>
-            Criado por <strong style="color: var(--text-primary);">João Alisson</strong> | Sr AI Engineer - Tech Lead @ Grupo PluralMed
+    <footer class="footer">
+        <div class="footer-info">
+            <i class="fas fa-user-tie"></i>
+            <span>Criado por <strong>João Alisson</strong> | Sr AI Engineer - Tech Lead @ Grupo PluralMed</span>
         </div>
-        <a href="https://linkedin.com/in/joaoallisson" target="_blank" style="color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <a href="https://linkedin.com/in/joaoallisson" target="_blank" class="footer-link">
             <i class="fab fa-linkedin"></i> linkedin.com/in/joaoallisson
         </a>
     </footer>

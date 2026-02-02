@@ -147,6 +147,7 @@
             margin-left: 260px;
             margin-top: 57px;
             padding: 2rem;
+            padding-bottom: 5rem;
             min-height: calc(100vh - 57px);
             max-width: 1200px;
         }
@@ -347,10 +348,86 @@
         .search-input:focus { outline: none; border-color: var(--primary); }
         
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
+            .sidebar { transform: translateX(-100%); z-index: 999; }
             .sidebar.open { transform: translateX(0); }
-            .main { margin-left: 0; }
+            .main { 
+                margin-left: 0; 
+                padding: 1.25rem;
+                padding-top: 1.5rem;
+            }
             .nav-toggle { display: block; }
+            .hero {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .hero h1 {
+                font-size: 1.25rem;
+            }
+            .hero p {
+                font-size: 0.875rem;
+            }
+        }
+        
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 260px;
+            right: 0;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8125rem;
+            z-index: 100;
+        }
+        
+        .footer-info {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-info i {
+            color: var(--primary-light);
+        }
+        
+        .footer-info strong {
+            color: var(--text-primary);
+        }
+        
+        .footer-link {
+            color: var(--accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .footer {
+                left: 0;
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.75rem 1rem;
+                text-align: center;
+            }
+            
+            .footer-info {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .main {
+                padding-bottom: 6rem;
+            }
         }
     </style>
 </head>
@@ -1127,12 +1204,12 @@ O alinhamento busca fazer a IA entender:
         }
     </script>
     
-    <footer style="position: fixed; bottom: 0; left: 260px; right: 0; background: var(--bg-surface); border-top: 1px solid var(--border); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem;">
-        <div style="color: var(--text-secondary);">
-            <i class="fas fa-user-tie" style="color: var(--primary-light);"></i>
-            Criado por <strong style="color: var(--text-primary);">João Alisson</strong> | Sr AI Engineer - Tech Lead @ Grupo PluralMed
+    <footer class="footer">
+        <div class="footer-info">
+            <i class="fas fa-user-tie"></i>
+            <span>Criado por <strong>João Alisson</strong> | Sr AI Engineer - Tech Lead @ Grupo PluralMed</span>
         </div>
-        <a href="https://linkedin.com/in/joaoallisson" target="_blank" style="color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+        <a href="https://linkedin.com/in/joaoallisson" target="_blank" class="footer-link">
             <i class="fab fa-linkedin"></i> linkedin.com/in/joaoallisson
         </a>
     </footer>
