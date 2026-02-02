@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca de Prompts para Executivos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --bg-dark: #0a0f1a;
+            --bg-card: #111827;
+            --bg-card-hover: #1f2937;
+            --bg-surface: #0d1321;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --border: #1f2937;
+            --border-light: #374151;
+            --success: #10b981;
+            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(10, 15, 26, 0.98);
+            backdrop-filter: blur(20px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0.875rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.025em;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+        }
+        
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .nav-toggle:hover { background: var(--bg-card-hover); }
+        
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 57px;
+            left: 0;
+            width: 260px;
+            height: calc(100vh - 57px);
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 1rem 0;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+        
+        .nav-section {
+            padding: 0.75rem 1rem;
+        }
+        
+        .nav-section-title {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            padding-left: 0.75rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.75rem;
+            margin: 2px 0;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 450;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+        
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+        }
+        
+        .nav-item.active .nav-icon { color: var(--primary-light); }
+        
+        .nav-icon {
+            width: 18px;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            transition: color 0.15s;
+        }
+        
+        .nav-item:hover .nav-icon { color: var(--text-secondary); }
+        
+        /* Main Content */
+        .main {
+            margin-left: 260px;
+            margin-top: 57px;
+            padding: 2rem;
+            min-height: calc(100vh - 57px);
+            max-width: 1200px;
+        }
+        
+        .hero {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient);
+        }
+        
+        .hero-content {
+            max-width: 640px;
+        }
+        
+        .hero h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .hero p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        .section {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+        
+        .section.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .section-header h2 {
+            font-size: 1.375rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card-hover);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--primary-light);
+        }
+        
+        /* Prompt Cards */
+        .prompt-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .prompt-card:hover {
+            border-color: var(--border-light);
+        }
+        
+        .prompt-header {
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        
+        .prompt-header:hover { background: var(--bg-card-hover); }
+        
+        .prompt-title {
+            font-size: 0.9375rem;
+            font-weight: 550;
+            color: var(--text-primary);
+        }
+        
+        .prompt-toggle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+        
+        .prompt-card.open .prompt-toggle { transform: rotate(180deg); }
+        
+        .prompt-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .prompt-card.open .prompt-content {
+            padding: 0 1.25rem 1.25rem;
+            max-height: 3000px;
+        }
+        
+        .prompt-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+        
+        .prompt-code {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .prompt-code-header {
+            background: rgba(255,255,255,0.03);
+            padding: 0.625rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .prompt-code-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .copy-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+            padding: 0.375rem 0.75rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+        
+        .copy-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .copy-btn.copied { background: var(--success); color: white; border-color: var(--success); }
+        
+        .prompt-code pre {
+            padding: 1rem;
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            font-size: 0.8125rem;
+            color: #e6edf3;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.55;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .prompt-code pre::-webkit-scrollbar { width: 6px; }
+        .prompt-code pre::-webkit-scrollbar-track { background: transparent; }
+        .prompt-code pre::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+        
+        /* Tags */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tag {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-light);
+            padding: 0.25rem 0.625rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 550;
+            letter-spacing: 0.02em;
+        }
+        
+        /* How to Use Section */
+        .how-to-use {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .how-to-use h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .how-to-use h3 i { color: var(--primary-light); }
+        
+        .how-to-use ol {
+            padding-left: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .how-to-use li { margin-bottom: 0.375rem; }
+        .how-to-use strong { color: var(--text-primary); font-weight: 550; }
+        
+        /* Category Grid */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 0.875rem;
+        }
+        
+        .category-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .category-card:hover {
+            border-color: var(--border-light);
+            background: var(--bg-card-hover);
+        }
+        
+        .category-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--primary-light);
+            flex-shrink: 0;
+        }
+        
+        .category-info h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .category-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 999;
+            }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; max-width: 100%; }
+            .nav-toggle { display: flex; }
+        }
+        
+        @media (max-width: 640px) {
+            .header-content { padding: 0.75rem 1rem; }
+            .main { padding: 1.25rem; }
+            .hero { padding: 2rem 1.5rem; }
+            .hero h1 { font-size: 1.5rem; }
+        }
+        
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 57px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+        
+        .overlay.open { display: block; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-layer-group"></i></div>
+                <span>Biblioteca de Prompts</span>
+            </div>
+            <button class="nav-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        </div>
+    </header>
+    
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    
+    <nav class="sidebar" id="sidebar">
+        <div class="nav-section">
+            <div class="nav-section-title">Menu</div>
+            <a class="nav-item active" onclick="showSection('home', this)">
+                <i class="nav-icon fas fa-home"></i> Início
+            </a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Categorias</div>
+            <a class="nav-item" onclick="showSection('cat1', this)">
+                <i class="nav-icon fas fa-chess"></i> Estratégia
+            </a>
+            <a class="nav-item" onclick="showSection('cat2', this)">
+                <i class="nav-icon fas fa-users"></i> Gestão de Pessoas
+            </a>
+            <a class="nav-item" onclick="showSection('cat3', this)">
+                <i class="nav-icon fas fa-chart-line"></i> Finanças
+            </a>
+            <a class="nav-item" onclick="showSection('cat4', this)">
+                <i class="nav-icon fas fa-envelope"></i> Comunicação
+            </a>
+            <a class="nav-item" onclick="showSection('cat5', this)">
+                <i class="nav-icon fas fa-bolt"></i> Produtividade
+            </a>
+            <a class="nav-item" onclick="showSection('cat6', this)">
+                <i class="nav-icon fas fa-handshake"></i> Negociação
+            </a>
+            <a class="nav-item" onclick="showSection('cat7', this)">
+                <i class="nav-icon fas fa-lightbulb"></i> Inovação
+            </a>
+            <a class="nav-item" onclick="showSection('cat8', this)">
+                <i class="nav-icon fas fa-bullseye"></i> Desenvolvimento
+            </a>
+            <a class="nav-item" onclick="showSection('cat9', this)">
+                <i class="nav-icon fas fa-book"></i> Estudo
+            </a>
+            <a class="nav-item" onclick="showSection('cat10', this)">
+                <i class="nav-icon fas fa-wand-magic-sparkles"></i> Técnicas Avançadas
+            </a>
+        </div>
+    </nav>
+    
+    <main class="main">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1>Biblioteca de Prompts Avançados</h1>
+                    <p>Uma coleção curada de prompts com técnicas avançadas de engenharia de prompt para líderes, empresários e executivos.</p>
+                </div>
+            </div>
+            
+            <div class="how-to-use">
+                <h3><i class="fas fa-info-circle"></i> Como Usar</h3>
+                <ol>
+                    <li><strong>Escolha o prompt</strong> adequado à sua necessidade</li>
+                    <li><strong>Substitua os campos</strong> entre [colchetes] com suas informações</li>
+                    <li><strong>Mantenha a estrutura</strong> — ela foi otimizada para melhores resultados</li>
+                    <li><strong>Itere</strong> — peça refinamentos após a primeira resposta</li>
+                </ol>
+            </div>
+            
+            <div class="category-grid">
+                <div class="category-card" onclick="showSection('cat1', document.querySelectorAll('.nav-item')[1])">
+                    <div class="category-icon"><i class="fas fa-chess"></i></div>
+                    <div class="category-info">
+                        <h4>Estratégia e Planejamento</h4>
+                        <p>Análise de cenários, OKRs, decisões</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat2', document.querySelectorAll('.nav-item')[2])">
+                    <div class="category-icon"><i class="fas fa-users"></i></div>
+                    <div class="category-info">
+                        <h4>Gestão de Pessoas</h4>
+                        <p>Feedback, 1:1s, vagas, liderança</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat3', document.querySelectorAll('.nav-item')[3])">
+                    <div class="category-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="category-info">
+                        <h4>Finanças e Resultados</h4>
+                        <p>Análise financeira, business cases</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat4', document.querySelectorAll('.nav-item')[4])">
+                    <div class="category-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="category-info">
+                        <h4>Comunicação Executiva</h4>
+                        <p>E-mails, apresentações, LinkedIn</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat5', document.querySelectorAll('.nav-item')[5])">
+                    <div class="category-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="category-info">
+                        <h4>Produtividade</h4>
+                        <p>Delegação, reuniões, documentos</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat6', document.querySelectorAll('.nav-item')[6])">
+                    <div class="category-icon"><i class="fas fa-handshake"></i></div>
+                    <div class="category-info">
+                        <h4>Vendas e Negociação</h4>
+                        <p>BATNA, táticas, preparação</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat7', document.querySelectorAll('.nav-item')[7])">
+                    <div class="category-icon"><i class="fas fa-lightbulb"></i></div>
+                    <div class="category-info">
+                        <h4>Inovação e Projetos</h4>
+                        <p>Validação de ideias, riscos</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat8', document.querySelectorAll('.nav-item')[8])">
+                    <div class="category-icon"><i class="fas fa-bullseye"></i></div>
+                    <div class="category-info">
+                        <h4>Desenvolvimento Pessoal</h4>
+                        <p>Mentoria, coaching, reflexão</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat9', document.querySelectorAll('.nav-item')[9])">
+                    <div class="category-icon"><i class="fas fa-book"></i></div>
+                    <div class="category-info">
+                        <h4>Estudo</h4>
+                        <p>Aprendizado acelerado, técnicas</p>
+                    </div>
+                </div>
+                <div class="category-card" onclick="showSection('cat10', document.querySelectorAll('.nav-item')[10])">
+                    <div class="category-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <div class="category-info">
+                        <h4>Técnicas Avançadas</h4>
+                        <p>Melhorar qualquer prompt</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 1: Estratégia -->
+        <section id="cat1" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-chess"></i></div>
+                <h2>Estratégia e Planejamento</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">1.1 Análise de Cenários</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Análise estratégica completa com SWOT, cenários e recomendações usando persona de consultor sênior.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um consultor estratégico sênior com 25 anos de experiência em consultoria de gestão (ex-McKinsey e BCG).
+
+# CONTEXTO
+Empresa: [nome/setor]
+Tamanho: [faturamento / nº funcionários]
+Situação atual: [descreva brevemente]
+Objetivo estratégico: [o que quer alcançar]
+
+# TAREFA
+Conduza uma análise estratégica completa.
+
+# INSTRUÇÕES (Chain-of-Thought)
+1. Identifique as premissas implícitas
+2. Faça uma análise SWOT estruturada
+3. Desenvolva 3 cenários (otimista, realista, pessimista)
+4. Identifique os 5 maiores riscos e mitigações
+5. Faça uma recomendação clara de próximos passos
+
+# AUTO-CRÍTICA
+Após sua análise, revise criticamente:
+- Que vieses podem estar presentes?
+- Que informações estão faltando?
+- O que um cético diria?</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Persona</span>
+                        <span class="tag">Chain-of-Thought</span>
+                        <span class="tag">Self-Critique</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">1.2 Planejamento Estratégico</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Criação de planejamento estratégico completo com OKRs, pilares e métricas de acompanhamento.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um Chief Strategy Officer experiente que já liderou transformações estratégicas em empresas de médio e grande porte.
+
+# CONTEXTO
+Empresa: [nome]
+Setor: [setor]
+Estágio: [startup / scale-up / estabelecida]
+Principais desafios:
+1. [desafio 1]
+2. [desafio 2]
+
+# TAREFA
+Crie um planejamento estratégico para [período].
+
+# FORMATO DE SAÍDA OBRIGATÓRIO
+1. VISÃO ESTRATÉGICA
+2. PILARES ESTRATÉGICOS (máximo 3)
+3. OKRs POR TRIMESTRE
+4. INICIATIVAS PRIORITÁRIAS
+5. MÉTRICAS DE ACOMPANHAMENTO
+6. RISCOS E MITIGAÇÕES
+7. GOVERNANÇA</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Persona</span>
+                        <span class="tag">Structured Output</span>
+                        <span class="tag">OKRs</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">1.3 Tomada de Decisão</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Framework para decisões críticas com múltiplas perspectivas e matriz de decisão.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um board advisor experiente que ajuda CEOs e conselhos a tomar decisões críticas.
+
+# DECISÃO A SER TOMADA
+[Descreva a decisão]
+
+# OPÇÕES EM CONSIDERAÇÃO
+- Opção A: [descreva]
+- Opção B: [descreva]
+- Opção C: [descreva]
+
+# INSTRUÇÕES (Tree of Thoughts)
+## FASE 1: Exploração
+Para CADA opção, explore cenários e consequências.
+
+## FASE 2: Análise Multi-Perspectiva
+Analise sob o ponto de vista de: CFO, CHRO, Clientes, Concorrentes.
+
+## FASE 3: Matriz de Decisão
+Pontue cada opção (1-10) em cada critério.
+
+## FASE 4: Recomendação
+Qual opção você recomenda e por quê.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Tree of Thoughts</span>
+                        <span class="tag">Multi-Perspective</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">1.4 Análise de Vantagem Competitiva</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">1.5 Análise SWOT Profunda</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Análise estratégica avançada com Matriz TOWS (Cruzada) para planos de ação robustos.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um estrategista corporativo com especialização em análise competitiva e TOWS Matrix.
+
+# CONTEXTO
+- Empresa/Projeto: [nome]
+- Objetivo da análise: [planejamento estratégico / lançamento de produto / decisão de investimento]
+- Principais concorrentes: [lista]
+
+# TAREFA
+Realize uma Análise SWOT Profunda e Cruzada (TOWS).
+
+# ETAPAS
+1. MATRIZ SWOT TRADICIONAL
+   - Forças (Internas): O que fazemos melhor que ninguém? Recursos únicos?
+   - Fraquezas (Internas): O que falta? Recursos limitados?
+   - Oportunidades (Externas): Tendências de mercado? Brechas dos concorrentes?
+   - Ameaças (Externas): Novos entrantes? Mudanças regulatórias?
+
+2. ANÁLISE CRUZADA (TOWS Matrix) - O Pulo do Gato
+   - Estratégias SO (Alavancar): Como usar Forças para aproveitar Oportunidades?
+   - Estratégias ST (Confrontar): Como usar Forças para minimizar Ameaças?
+   - Estratégias WO (Melhorar): O que precisamos corrigir nas Fraquezas para aproveitar Oportunidades?
+   - Estratégias WT (Defender): Como minimizar Fraquezas para evitar Ameaças?
+
+3. PRIORIZAÇÃO E PLANO DE AÇÃO
+   - Selecione as 3 iniciativas de maior impacto identificadas na análise cruzada.
+   - Defina um "Quick Win" (ganho rápido) para a próxima semana.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">SWOT</span>
+                        <span class="tag">TOWS Matrix</span>
+                        <span class="tag">Estratégia</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 2: Gestão de Pessoas -->
+        <section id="cat2" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-users"></i></div>
+                <h2>Gestão de Pessoas e Liderança</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">2.1 Feedback Estruturado</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Criação de roteiro de feedback usando modelo SBI-A (Situação-Comportamento-Impacto-Alternativa).</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um executive coach certificado com especialização em desenvolvimento de liderança.
+
+# CONTEXTO DO FEEDBACK
+- Meu cargo: [seu cargo]
+- Cargo do colaborador: [cargo]
+- Tipo de feedback: [desempenho / comportamental / desenvolvimento]
+
+# PONTOS A ABORDAR
+Positivos: [liste]
+A desenvolver: [liste]
+
+# TAREFA
+Usando o modelo SBI-A, crie:
+1. Roteiro completo da conversa
+2. Perguntas poderosas para usar
+3. Possíveis reações e como lidar
+4. Follow-up sugerido</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Persona</span>
+                        <span class="tag">Few-Shot</span>
+                        <span class="tag">Framework SBI</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">2.2 Descrição de Vaga</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Criação de descrição de vaga inclusiva, atrativa e clara.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista em Talent Acquisition com foco em employer branding e diversidade.
+
+# INFORMAÇÕES DA VAGA
+- Título: [título]
+- Área: [departamento]
+- Modelo: [presencial / híbrido / remoto]
+
+# INSTRUÇÕES
+Crie uma descrição de vaga que:
+1. Seja INCLUSIVA (linguagem neutra, sem jargões)
+2. Seja ATRATIVA (comece com impacto, não requisitos)
+3. Seja CLARA (bullets curtos, must-have vs nice-to-have)
+
+Máximo 600 palavras.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Inclusive Language</span>
+                        <span class="tag">Employer Branding</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">2.3 Condução de 1:1</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Roteiro personalizado para one-on-ones com banco de perguntas por situação.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um leadership coach que treina gestores em como conduzir 1:1s transformadoras.
+
+# CONTEXTO
+- Nome/cargo do liderado: [info]
+- Momento: [onboarding / normal / alta performance / baixa performance]
+- Desafios observados: [o que você notou]
+
+# ESTRUTURA DA 1:1 (45-60 min)
+1. CHECK-IN (5 min) - Conexão pessoal
+2. PAUTA DO LIDERADO (15-20 min)
+3. DESENVOLVIMENTO E FEEDBACK (15 min)
+4. OBSTÁCULOS E SUPORTE (10 min)
+5. ENCERRAMENTO (5 min)
+
+Gere perguntas poderosas para cada fase.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Coaching</span>
+                        <span class="tag">Question Bank</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">2.4 Comunicação de Mudança</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Plano de comunicação completo para gestão de mudanças organizacionais.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista em Change Management certificado em Prosci.
+
+# A MUDANÇA
+- O que vai mudar: [descreva]
+- Por que está mudando: [razão de negócio]
+- Quando: [timeline]
+- Quem é afetado: [grupos de pessoas]
+
+# ENTREGAS ESPERADAS
+1. MAPEAMENTO DE STAKEHOLDERS (Champions, Neutros, Resistentes)
+2. COMUNICADO OFICIAL (versão e-mail + talking points)
+3. FAQ ANTECIPADO (10 perguntas + respostas)
+4. TOOLKIT PARA GESTORES
+5. PLANO DE COMUNICAÇÃO CONTÍNUA
+6. MÉTRICAS DE SUCESSO</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Change Management</span>
+                        <span class="tag">Stakeholder Mapping</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">2.5 Diagnóstico de Performance de Time</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 3: Finanças -->
+        <section id="cat3" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-chart-line"></i></div>
+                <h2>Finanças e Resultados</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">3.1 Análise Financeira</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Análise completa de DRE, balanço e fluxo de caixa com recomendações.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um CFO experiente com background em investment banking.
+
+# DADOS FINANCEIROS
+[Cole aqui: DRE, balanço, fluxo de caixa]
+
+# INSTRUÇÕES (Chain-of-Thought)
+Analise passo a passo:
+1. Visão Geral - Score de saúde (1-10)
+2. Análise de Receita
+3. Análise de Margens
+4. Análise de Custos
+5. Cash Flow
+6. Red Flags e Green Flags
+7. Top 3 Ações Recomendadas
+
+Use linguagem acessível para não-financeiros.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Chain-of-Thought</span>
+                        <span class="tag">Structured Analysis</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">3.2 Business Case</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Estrutura completa de business case com ROI, riscos e objeções.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um diretor de estratégia que já aprovou e rejeitou centenas de business cases.
+
+# PROPOSTA
+- O que quero aprovar: [descreva]
+- Investimento solicitado: [valor]
+- Problema que resolve: [dor]
+
+# ESTRUTURA DO BUSINESS CASE
+1. EXECUTIVE SUMMARY
+2. CONTEXTO E PROBLEMA
+3. SOLUÇÃO PROPOSTA
+4. ANÁLISE FINANCEIRA (ROI, Payback, VPL)
+5. RISCOS E MITIGAÇÕES
+6. ANÁLISE DE SENSIBILIDADE
+7. IMPLEMENTAÇÃO
+8. OBJEÇÕES ANTECIPADAS</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Structured</span>
+                        <span class="tag">Objection Handling</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">3.3 Otimização de Estrutura de Custos</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 4: Comunicação -->
+        <section id="cat4" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-envelope"></i></div>
+                <h2>Comunicação Executiva</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">4.1 E-mail Executivo</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">E-mails com técnica BLUF (Bottom Line Up Front) calibrados para cada audiência.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista em comunicação executiva. Principe BLUF (Bottom Line Up Front).
+
+# CONTEXTO
+- Destinatário: [cargo e nome]
+- Objetivo: [informar / solicitar aprovação / pedir ação]
+- Tom: [formal / semiformal / direto / urgente]
+
+# REGRAS
+1. Linha de assunto: máximo 8 palavras, específica
+2. Primeira linha: conclusão/pedido (não contexto)
+3. Bullets para múltiplos pontos
+4. Call-to-Action claro com prazo
+
+Máximo 150 palavras.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">BLUF</span>
+                        <span class="tag">Tone Calibration</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">4.2 Apresentação para Board</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Estrutura de apresentação usando Pyramid Principle com Q&A preparation.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você prepara CEOs para apresentações a conselhos usando Pyramid Principle da McKinsey.
+
+# CONTEXTO
+- Fórum: [board / diretoria / investidores]
+- Tempo: [X minutos]
+- Objetivo: [informar / aprovar / decidir]
+
+# ENTREGAS
+1. ESTRUTURA DOS SLIDES (Pyramid Principle)
+2. NARRATIVA (o que dizer em cada slide)
+3. APPENDIX para perguntas previsíveis
+4. Q&A PREPARATION
+5. PRE-MORTEM (o que pode dar errado)</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Pyramid Principle</span>
+                        <span class="tag">Q&A Prep</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">4.3 Post LinkedIn</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Posts para LinkedIn com ganchos que convertem e geram engajamento.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um ghostwriter de executivos C-level no LinkedIn.
+
+# CONTEXTO
+- Meu tom: [inspirador / provocativo / educativo]
+- Tema: [assunto]
+- Ângulo: [seu ponto de vista]
+
+# CRIE 3 VERSÕES
+1. STORYTELLING (Gancho → Conflito → Resolução → Lição)
+2. CONTRARIAN (Desafie crença comum)
+3. EDUCATIVO (Lista com valor acionável)
+
+# REGRAS
+- Primeiras 2 linhas: máximo 150 caracteres, faça parar o scroll
+- Parágrafos curtos, bullets
+- Termine com pergunta genuína
+- Evite humblebrags e clichês</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Hook</span>
+                        <span class="tag">Engagement</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">4.4 Mensagem Estratégica de Alinhamento</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 5: Produtividade -->
+        <section id="cat5" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-bolt"></i></div>
+                <h2>Produtividade e Organização</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">5.1 Análise de Documento</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Análise em múltiplas passadas para extrair insights acionáveis de documentos longos.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um analista executivo que prepara briefings para C-levels.
+
+# DOCUMENTO
+[Cole o documento ou descreva]
+
+# INSTRUÇÕES (Multi-Pass)
+PASSADA 1: EXECUTIVE DIGEST (TL;DR em 2 frases)
+PASSADA 2: ESTRUTURA E PONTOS-CHAVE (máximo 7)
+PASSADA 3: ANÁLISE CRÍTICA E APLICAÇÃO
+
+Inclua:
+- Ações sugeridas com prioridade
+- O que posso ignorar
+- Limitações do documento
+
+Máximo 500 palavras.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Multi-Pass</span>
+                        <span class="tag">Structured Summary</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">5.2 Preparação para Reunião</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Preparação completa com mapeamento de objeções e pre-mortem.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um executive coach especializado em preparação para reuniões de alto impacto.
+
+# SOBRE A REUNIÃO
+- Tipo: [negociação / decisão / apresentação]
+- MEU objetivo real: [o que quero sair tendo]
+
+# ENTREGAS
+1. PRE-WORK (o que fazer antes)
+2. AGENDA SUGERIDA
+3. TALKING POINTS
+4. MAPEAMENTO DE OBJEÇÕES
+5. CENÁRIOS (melhor caso, esperado, pior caso)
+6. PRE-MORTEM (o que pode dar errado)
+7. TEMPLATE DE FOLLOW-UP</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Pre-Mortem</span>
+                        <span class="tag">Role-Play</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">5.3 Delegação Efetiva</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Framework de delegação com níveis de autonomia e briefing estruturado.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é especialista em gestão de pessoas e produtividade de líderes.
+
+# TAREFA PARA DELEGAR
+- O que é: [descreva]
+- Prazo: [deadline]
+- Para quem: [pessoa e experiência]
+
+# FRAMEWORK DE DELEGAÇÃO
+1. NÍVEIS DE AUTONOMIA (1-5)
+2. BRIEFING ESTRUTURADO
+   - Contexto (Por que importa)
+   - Objetivo (Definição de "feito")
+   - Escopo (Incluído vs Excluído)
+   - Checkpoints
+3. PERGUNTAS PARA VERIFICAR ENTENDIMENTO
+4. ANTI-PADRÕES A EVITAR</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Autonomy Levels</span>
+                        <span class="tag">Framework</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">5.4 Sistema de Priorização Executiva</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 6: Vendas -->
+        <section id="cat6" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-handshake"></i></div>
+                <h2>Vendas e Negociação</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">6.1 Preparação para Negociação</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Análise BATNA, ZOPA, táticas e frases úteis para negociações de alto impacto.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é expert em negociação com formação em Harvard (PON).
+
+# A NEGOCIAÇÃO
+- O que estou negociando: [descreva]
+- Valor envolvido: [montante]
+- Objetivo ideal / Alvo realista / Mínimo aceitável
+
+# ANÁLISE E PREPARAÇÃO
+1. BATNA ANALYSIS (Best Alternative)
+2. ZOPA (Zone of Possible Agreement)
+3. ESTRATÉGIA DE ANCHOR
+4. CONCESSÕES PLANEJADAS
+5. TÁTICAS ESPERADAS E RESPOSTAS
+6. FRASES ÚTEIS (abrir, responder, pressionar, fechar)
+7. WALK-AWAY PLAN
+8. CHECKLIST PRÉ-NEGOCIAÇÃO</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">BATNA</span>
+                        <span class="tag">Game Theory</span>
+                        <span class="tag">Harvard Method</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">6.2 Estratégia de Concessões Avançada</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 7: Inovação -->
+        <section id="cat7" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-lightbulb"></i></div>
+                <h2>Inovação e Projetos</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">7.1 Validação de Ideia</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Análise rigorosa de ideias com first principles, riscos e kill criteria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um venture capitalist que já avaliou milhares de startups.
+
+# A IDEIA
+- Descrição: [o que é]
+- Problema que resolve: [qual dor]
+- Diferencial: [por que essa solução]
+
+# ANÁLISE (First Principles)
+1. PROBLEMA - É real? Pessoas buscam soluções?
+2. SOLUÇÃO - 10x Test: é 10x melhor em alguma dimensão?
+3. MERCADO - TAM/SAM/SOM
+4. MODELO DE NEGÓCIO - Unit economics
+5. COMPETIÇÃO - Por que você vai ganhar?
+6. RISCOS (Mercado, Produto, Time, Financeiro)
+7. EXPERIMENTOS PARA VALIDAR
+8. KILL CRITERIA
+9. VEREDICTO (Score 1-10 por dimensão)</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">First Principles</span>
+                        <span class="tag">Risk Framework</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">7.2 Pipeline de Inovação Estruturado</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 8: Desenvolvimento Pessoal -->
+        <section id="cat8" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-bullseye"></i></div>
+                <h2>Desenvolvimento Pessoal</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">8.1 Mentor Virtual</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Sessão de coaching usando método socrático para reflexão profunda.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um executive coach e mentor com 30 anos de experiência. Use método socrático.
+
+# SOBRE MIM
+- Cargo atual: [cargo]
+- Aspiração: [onde quero chegar]
+
+# SITUAÇÃO ATUAL
+[Descreva o desafio, dilema ou reflexão]
+
+# REGRAS DO COACHING
+1. Faça mais perguntas do que dá respostas
+2. Nunca me diga o que fazer - me ajude a descobrir
+3. Desafie minhas premissas
+4. Me faça ver pontos cegos
+
+# ESTRUTURA
+FASE 1: EXPLORAÇÃO (o que está acontecendo?)
+FASE 2: REFLEXÃO (o que você está evitando ver?)
+FASE 3: COMPROMETIMENTO (o que vai fazer diferente?)</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Socratic Method</span>
+                        <span class="tag">Coaching</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">8.2 Plano de Desenvolvimento de Liderança</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 9: Estudo -->
+        <section id="cat9" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-book"></i></div>
+                <h2>Estudo</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">9.1 Aprendizado Acelerado</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Plano de estudo otimizado com técnica Feynman, recall ativo e espaçamento.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é especialista em aprendizagem acelerada com PhD em Ciências da Educação.
+
+# TEMA PARA APRENDER
+- Assunto: [tema/skill]
+- Nível atual: [iniciante / intermediário / avançado]
+- Tempo disponível: [horas por semana]
+- Objetivo: [como vai usar]
+
+# ENTREGAS
+1. MAPA DO CONHECIMENTO (fundamentais → intermediários → avançados)
+2. PLANO DE ESTUDO ESTRUTURADO (semana a semana)
+3. TÉCNICAS:
+   - Feynman (explique para criança de 10 anos)
+   - Recall Ativo (flashcards, exercícios)
+   - Espaçamento (1d, 3d, 1sem, 2sem, 1mês)
+4. RECURSOS RECOMENDADOS
+5. MÉTRICAS DE PROGRESSO</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Feynman Technique</span>
+                        <span class="tag">Spaced Repetition</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">9.2 Preparação para Certificação</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Plano completo de preparação para provas e certificações profissionais.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um coach de alta performance especializado em preparação para provas e certificações.
+
+# A PROVA/CERTIFICAÇÃO
+- Nome: [certificação/prova]
+- Formato: [múltipla escolha / dissertativa / prática]
+- Data da prova: [quando]
+- Tempo disponível: [horas por dia/semana]
+
+# PLANO DE PREPARAÇÃO
+1. ANÁLISE DA PROVA (80/20 do conteúdo)
+2. CRONOGRAMA DE ESTUDO (fases e marcos)
+3. ESTRATÉGIA DE SIMULADOS
+4. TÉCNICAS (Active Recall, Questões antes do conteúdo)
+5. GESTÃO DE TEMPO NA PROVA
+6. SEMANA DA PROVA (preparação final)
+7. CHECKPOINTS DE PROGRESSO</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Test Strategy</span>
+                        <span class="tag">Deliberate Practice</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">9.3 Criação de Material de Estudo</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Transforme conteúdo em material de estudo otimizado para aprendizagem.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um instructional designer com background em neurociência da aprendizagem.
+
+# O QUE PRECISO APRENDER/ENSINAR
+- Tema: [assunto]
+- Nível do aprendiz: [iniciante / intermediário / avançado]
+- Objetivo: [o que deve ser capaz de fazer após estudar]
+
+# CONTEÚDO BASE
+[Descreva ou cole o conteúdo a transformar]
+
+# ENTREGAS
+1. RESUMO EXECUTIVO (1 página)
+2. ESTRUTURA HIERÁRQUICA
+3. EXPLICAÇÃO COM ANALOGIAS
+4. FLASHCARDS (Pergunta/Resposta)
+5. QUIZ DE AUTOAVALIAÇÃO (Básico, Intermediário, Avançado)
+6. MAPA MENTAL de conexões
+7. EXEMPLOS PRÁTICOS (correto vs incorreto)
+8. CHECKLIST DE DOMÍNIO</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Instructional Design</span>
+                        <span class="tag">Multi-Format</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">9.4 Mapa de Conhecimento Estratégico</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Category 10: Técnicas Avançadas -->
+        <section id="cat10" class="section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                <h2>Técnicas Avançadas</h2>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">Self-Critique (Iteração com Auto-Crítica)</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Adicione ao final de qualquer prompt para obter uma resposta mais refinada.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Técnica</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre>Agora faça uma análise crítica da sua própria resposta:
+1. O que pode estar errado ou incompleto?
+2. Que vieses podem estar presentes?
+3. O que um especialista criticaria?
+4. Se você tivesse que refazer, o que faria diferente?
+
+Então, me dê uma versão 2.0 incorporando essa crítica.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Iteração</span>
+                        <span class="tag">Qualidade</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">Multi-Perspectiva</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Obtenha análises de múltiplos ângulos para decisões complexas.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Técnica</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre>Agora analise a mesma questão sob 3 perspectivas diferentes:
+1. Um otimista que vê oportunidades
+2. Um pessimista que vê riscos
+3. Um pragmático que foca em execução
+
+Sintetize os insights das 3 perspectivas.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Análise</span>
+                        <span class="tag">Decisão</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">Chain of Verification</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Para respostas com fatos/dados - reduz alucinações.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Técnica</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre>Antes de finalizar, verifique sua resposta:
+1. Que afirmações você fez que podem estar incorretas?
+2. Que dados você usou? São confiáveis?
+3. Que premissas você assumiu implicitamente?
+
+Marque com [VERIFICAR] qualquer afirmação que você não tem certeza.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Verificação</span>
+                        <span class="tag">Anti-Alucinação</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">Contrarian Challenge</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Advogado do diabo - encontre falhas em suas próprias ideias.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Técnica</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre>Agora, atue como advogado do diabo:
+- Argumente CONTRA tudo que você acabou de recomendar
+- Que evidências suportariam a posição oposta?
+- Em que cenários suas recomendações falhariam?</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Devil's Advocate</span>
+                        <span class="tag">Stress Test</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">Compression + Expansion</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Controle o nível de detalhe das respostas.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Técnica</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># Para comprimir:
+Resuma sua resposta em exatamente 3 bullets de 1 linha cada.
+
+# Para expandir:
+Expanda o ponto [X] com exemplos concretos e próximos passos acionáveis.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Formatação</span>
+                        <span class="tag">Controle</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="prompt-card">
+                <div class="prompt-header" onclick="toggleCard(this)">
+                    <span class="prompt-title">Framework Extra Decision Stress Test</span>
+                    <i class="prompt-toggle fas fa-chevron-down"></i>
+                </div>
+                <div class="prompt-content">
+                    <p class="prompt-description">Prompt avançado adicional para aprofundar decisões estratégicas nesta categoria.</p>
+                    <div class="prompt-code">
+                        <div class="prompt-code-header">
+                            <span class="prompt-code-label">Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fas fa-copy"></i> Copiar</button>
+                        </div>
+                        <pre># PERSONA
+Você é um especialista sênior reconhecido internacionalmente.
+
+# CONTEXTO
+[Descreva o cenário]
+
+# TAREFA
+Desenvolva uma análise profunda e estruturada.
+
+# INSTRUÇÕES
+1. Identifique premissas implícitas
+2. Avalie riscos críticos
+3. Explore cenários alternativos
+4. Proponha ações priorizadas
+5. Faça auto-crítica estratégica
+
+# OUTPUT
+Resumo executivo + plano acionável.</pre>
+                    </div>
+                    <div class="tags">
+                        <span class="tag">Advanced</span>
+                        <span class="tag">Structured Thinking</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    
+    <script>
+        function showSection(sectionId, navItem) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (navItem) navItem.classList.add('active');
+            
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function toggleCard(header) {
+            header.parentElement.classList.toggle('open');
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
+        }
+        
+        function copyToClipboard(btn) {
+            const code = btn.closest('.prompt-code').querySelector('pre').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const icon = btn.querySelector('i');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copiado';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copiar';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+    
+    <footer style="position: fixed; bottom: 0; left: 260px; right: 0; background: var(--bg-surface); border-top: 1px solid var(--border); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem;">
+        <div style="color: var(--text-secondary);">
+            <i class="fas fa-user-tie" style="color: var(--primary-light);"></i>
+            Criado por <strong style="color: var(--text-primary);">João Alisson</strong> | Sr AI Engineer - Tech Lead @ Grupo PluralMed
+        </div>
+        <a href="https://linkedin.com/in/joaoallisson" target="_blank" style="color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fab fa-linkedin"></i> linkedin.com/in/joaoallisson
+        </a>
+    </footer>
+</body>
+</html>
