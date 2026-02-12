@@ -6,6 +6,7 @@
     <title>DRE Gerencial — PluralMed</title>
     <meta name="description" content="Demonstrativo de Resultado do Exercício - PluralMed">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --bg-primary: #0f1117;
@@ -450,6 +451,729 @@
         }
         .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5; }
 
+        /* Calendar picker */
+        .cal-picker { position: relative; min-width: 200px; }
+        .cal-btn {
+            background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px;
+            padding: 8px 32px 8px 12px; color: var(--text-primary); font-family: 'Inter', sans-serif;
+            font-size: 13px; cursor: pointer; width: 100%; text-align: left;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: border-color 0.2s; position: relative;
+        }
+        .cal-btn::after { content: '▾'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted); pointer-events: none; }
+        .cal-btn:hover, .cal-btn.open { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        .cal-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0;
+            min-width: 280px; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 200; padding: 0;
+        }
+        .cal-dropdown.open { display: block; }
+        .cal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; border-bottom: 1px solid var(--border);
+        }
+        .cal-header span { font-size: 14px; font-weight: 700; color: var(--text-primary); min-width: 60px; text-align: center; }
+        .cal-nav {
+            background: none; border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text-secondary); cursor: pointer; width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s;
+        }
+        .cal-nav:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .cal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 10px 12px; }
+        .cal-month {
+            padding: 8px 4px; border-radius: 6px; border: 1px solid transparent;
+            background: var(--bg-primary); color: var(--text-secondary); font-size: 12px;
+            font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s;
+        }
+        .cal-month:hover { border-color: var(--accent); color: var(--text-primary); }
+        .cal-month.selected { background: var(--accent); color: white; border-color: var(--accent); }
+        .cal-month.unavailable { opacity: 0.25; cursor: default; }
+        .cal-actions {
+            display: flex; gap: 6px; justify-content: flex-end; padding: 8px 12px;
+            border-top: 1px solid var(--border);
+        }
+        .cal-actions button {
+            background: none; border: none; color: var(--accent); font-family: 'Inter', sans-serif;
+            font-size: 11px; font-weight: 600; cursor: pointer; padding: 4px 10px; border-radius: 4px; transition: background 0.15s;
+        }
+        .cal-actions button:hover { background: var(--accent-glow); }
+        .cal-selected-tags {
+            display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 12px 4px;
+        }
+        .cal-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: var(--accent-glow); color: var(--accent); font-size: 10px;
+            font-weight: 600; padding: 2px 8px; border-radius: 12px;
+        }
+        .cal-tag-x {
+            cursor: pointer; font-size: 12px; line-height: 1; opacity: 0.7; transition: opacity 0.15s;
+        }
+        .cal-tag-x:hover { opacity: 1; }
+
+        /* Data Cube */
+        .cube-container {
+            padding: 0 32px 32px; display: none;
+        }
+        .cube-container.visible { display: block; }
+
+        /* Cube separator */
+        .cube-divider {
+            border: none; border-top: 1px solid var(--border); margin: 8px 32px 0;
+        }
+
+        /* Cube header */
+        .cube-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .cube-header-left {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .cube-header h2 {
+            font-size: 18px; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 8px; margin: 0;
+        }
+        .cube-header h2 svg { opacity: 0.6; }
+        .cube-header-actions {
+            display: flex; gap: 6px; align-items: center;
+        }
+        .cube-mode-btn {
+            background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+            padding: 5px 10px; color: var(--text-muted); font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .cube-mode-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+        .cube-mode-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .cube-export-btn {
+            background: none; border: 1px solid var(--border); border-radius: 6px;
+            padding: 5px 10px; color: var(--text-muted); font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .cube-export-btn:hover { border-color: var(--green); color: var(--green); }
+
+        /* Cube controls - card style */
+        .cube-controls-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 16px 20px; margin-bottom: 16px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;
+        }
+        .cube-ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+        .cube-ctrl-group label {
+            font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 700;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .cube-ctrl-group label svg { opacity: 0.5; }
+        .cube-ctrl-group select {
+            background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+            padding: 7px 10px; color: var(--text-primary); font-family: 'Inter', sans-serif;
+            font-size: 12px; width: 100%; outline: none; transition: border-color 0.2s;
+        }
+        .cube-ctrl-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+        /* Cube summary stats */
+        .cube-stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px; margin-bottom: 16px;
+        }
+        .cube-stat {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+            padding: 12px 14px; text-align: center; transition: border-color 0.2s;
+        }
+        .cube-stat:hover { border-color: var(--accent); }
+        .cube-stat-label {
+            font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 700; margin-bottom: 4px;
+        }
+        .cube-stat-value {
+            font-size: 16px; font-weight: 700; color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .cube-stat-sub {
+            font-size: 10px; color: var(--text-muted); margin-top: 2px;
+        }
+
+        /* Cube chip bar */
+        .cube-chip-bar {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+            align-items: center;
+        }
+        .cube-chip-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 700; margin-right: 4px;
+        }
+        .cube-chip {
+            padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600;
+            cursor: pointer; border: 1px solid var(--border); color: var(--text-secondary);
+            background: var(--bg-primary); transition: all 0.2s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .cube-chip:hover { border-color: var(--accent); color: var(--text-primary); background: rgba(99,102,241,0.06); }
+        .cube-chip.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 8px rgba(99,102,241,0.3); }
+        .cube-chip-count {
+            font-size: 9px; background: rgba(255,255,255,0.2); padding: 1px 5px;
+            border-radius: 8px; font-weight: 700;
+        }
+        .cube-chip.active .cube-chip-count { background: rgba(255,255,255,0.25); }
+        .cube-chip:not(.active) .cube-chip-count { background: var(--bg-section); color: var(--text-muted); }
+
+        /* Cube table */
+        .cube-table-wrap { overflow-x: auto; border-radius: var(--radius); }
+        .cube-table {
+            width: 100%; border-collapse: separate; border-spacing: 0;
+            background: var(--bg-card); border-radius: var(--radius);
+            border: 1px solid var(--border); font-size: 12px;
+        }
+        .cube-table th {
+            background: var(--bg-section); padding: 10px 14px; text-align: right;
+            font-weight: 600; font-size: 10px; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-muted);
+            border-bottom: 2px solid var(--border); white-space: nowrap;
+            cursor: pointer; user-select: none; transition: color 0.15s;
+            position: sticky; top: 0; z-index: 2;
+        }
+        .cube-table th:hover { color: var(--accent); }
+        .cube-table th:first-child { text-align: left; position: sticky; left: 0; z-index: 3; }
+        .cube-table th .sort-icon { font-size: 8px; margin-left: 3px; opacity: 0.4; }
+        .cube-table th .sort-icon.active { opacity: 1; color: var(--accent); }
+        .cube-table td {
+            padding: 9px 14px; border-bottom: 1px solid rgba(42,46,66,0.4);
+            text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;
+            color: var(--text-secondary); position: relative;
+        }
+        .cube-table td:first-child {
+            text-align: left; color: var(--text-primary); font-weight: 600;
+            position: sticky; left: 0; background: inherit; z-index: 1;
+            max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+        }
+        .cube-table tbody tr { transition: background 0.1s; }
+        .cube-table tbody tr:hover { background: var(--bg-hover); }
+        .cube-table tbody tr:nth-child(even) { background: rgba(42,46,66,0.15); }
+        .cube-table tbody tr:nth-child(even):hover { background: var(--bg-hover); }
+        .cube-table td.total-col {
+            font-weight: 700; color: var(--text-primary);
+            border-left: 2px solid var(--border);
+        }
+        .cube-table tfoot td {
+            font-weight: 700; color: var(--text-primary);
+            border-top: 2px solid var(--border); background: var(--bg-section);
+        }
+        .cube-table tfoot td:first-child { background: var(--bg-section); }
+
+        /* Heatmap cell styling */
+        .cube-cell-bar {
+            position: absolute; left: 0; top: 0; bottom: 0;
+            opacity: 0.12; border-radius: 2px; transition: width 0.3s ease;
+        }
+        .cube-cell-bar.bar-pos { background: var(--green); }
+        .cube-cell-bar.bar-neg { background: var(--red); }
+        .cube-cell-val { position: relative; z-index: 1; }
+
+        /* Heatmap mode */
+        .cube-table.heatmap td:not(:first-child):not(.total-col) {
+            transition: background 0.2s;
+        }
+
+        /* Pct badge in cells */
+        .cube-pct {
+            font-size: 9px; color: var(--text-muted); margin-left: 6px;
+            font-weight: 400; opacity: 0.7;
+        }
+
+        /* ===== Chart Builder ===== */
+        .charts-container { padding: 0 32px 32px; display: none; }
+        .charts-container.visible { display: block; }
+        .charts-divider { border: none; border-top: 1px solid var(--border); margin: 8px 32px 0; }
+
+        .charts-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .charts-header h2 {
+            font-size: 18px; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 8px; margin: 0;
+        }
+        .charts-header h2 svg { opacity: 0.6; }
+
+        .chart-add-btn {
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            border: none; border-radius: 8px; padding: 8px 16px;
+            color: white; font-family: 'Inter', sans-serif; font-size: 12px;
+            font-weight: 600; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 2px 10px rgba(99,102,241,0.3);
+        }
+        .chart-add-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
+
+        .charts-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .chart-card:hover { border-color: rgba(99,102,241,0.3); box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+        .chart-card.fullwidth { grid-column: 1 / -1; }
+
+        .chart-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-bottom: 1px solid var(--border);
+            background: var(--bg-section); cursor: grab;
+        }
+        .chart-card-title {
+            font-size: 13px; font-weight: 600; color: var(--text-primary);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .chart-card-title .chart-type-icon {
+            width: 18px; height: 18px; opacity: 0.5;
+        }
+        .chart-card-actions {
+            display: flex; gap: 4px;
+        }
+        .chart-card-actions button {
+            background: none; border: 1px solid transparent; border-radius: 4px;
+            color: var(--text-muted); cursor: pointer; padding: 3px 6px;
+            font-size: 12px; transition: all 0.15s; font-family: 'Inter', sans-serif;
+        }
+        .chart-card-actions button:hover {
+            border-color: var(--border); color: var(--text-primary); background: var(--bg-hover);
+        }
+        .chart-card-actions button.btn-delete:hover { color: var(--red); border-color: rgba(239,68,68,0.3); }
+
+        .chart-card-body { padding: 16px; position: relative; min-height: 260px; }
+        .chart-card-body canvas { max-height: 350px; }
+
+        /* Chart config modal/panel */
+        .chart-config-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 900; align-items: center; justify-content: center;
+        }
+        .chart-config-overlay.open { display: flex; }
+        .chart-config-panel {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 0; width: 520px; max-width: 95vw;
+            max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .chart-config-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+        }
+        .chart-config-header h3 {
+            font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .chart-config-close {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 20px; cursor: pointer; padding: 4px 8px; line-height: 1;
+            border-radius: 4px; transition: all 0.15s;
+        }
+        .chart-config-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .chart-config-body { padding: 20px; }
+
+        .cfg-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;
+        }
+        .cfg-row.full { grid-template-columns: 1fr; }
+        .cfg-field { display: flex; flex-direction: column; gap: 4px; }
+        .cfg-field label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 700;
+        }
+        .cfg-field input, .cfg-field select {
+            background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 6px; padding: 8px 10px; color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 12px;
+            outline: none; transition: border-color 0.2s; width: 100%; box-sizing: border-box;
+        }
+        .cfg-field input:focus, .cfg-field select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .cfg-tipo-chips {
+            display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
+        }
+        .cfg-tipo-chip {
+            padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;
+            cursor: pointer; border: 1px solid var(--border); color: var(--text-secondary);
+            background: var(--bg-primary); transition: all 0.15s;
+        }
+        .cfg-tipo-chip:hover { border-color: var(--accent); }
+        .cfg-tipo-chip.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .cfg-preview {
+            background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px; margin-top: 8px; min-height: 160px;
+            position: relative;
+        }
+        .cfg-preview canvas { max-height: 200px; }
+
+        .chart-config-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 14px 20px; border-top: 1px solid var(--border);
+        }
+        .chart-config-footer button {
+            padding: 8px 20px; border-radius: 6px; font-family: 'Inter', sans-serif;
+            font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+        }
+        .cfg-btn-cancel {
+            background: none; border: 1px solid var(--border); color: var(--text-secondary);
+        }
+        .cfg-btn-cancel:hover { border-color: var(--text-muted); color: var(--text-primary); }
+        .cfg-btn-save {
+            background: var(--accent); border: 1px solid var(--accent); color: white;
+        }
+        .cfg-btn-save:hover { background: #5b5fc7; }
+
+        .chart-empty-state {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 40px 20px; color: var(--text-muted);
+            text-align: center;
+        }
+        .chart-empty-state svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+        .chart-empty-state p { margin: 0 0 12px; font-size: 13px; }
+
+        /* DRE table action bar */
+        .dre-action-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; margin-bottom: 8px;
+        }
+        .dre-action-bar .dre-actions-left { display: flex; align-items: center; gap: 8px; }
+        .dre-action-bar .dre-actions-right { display: flex; align-items: center; gap: 8px; }
+        .btn-export-dre {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600;
+            font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.15s;
+            background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
+            color: #22c55e;
+        }
+        .btn-export-dre:hover { background: rgba(34,197,94,0.22); border-color: #22c55e; }
+        .btn-export-dre svg { flex-shrink: 0; }
+
+        /* Value origin modal */
+        .origin-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px); z-index: 2000;
+            display: none; align-items: center; justify-content: center;
+        }
+        .origin-overlay.open { display: flex; }
+        .origin-modal {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; width: min(680px, 94vw); max-height: 85vh;
+            box-shadow: 0 16px 64px rgba(0,0,0,0.6); overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .origin-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+        }
+        .origin-modal-header h3 {
+            margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .origin-modal-header .origin-close {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 18px; padding: 4px 8px; border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .origin-modal-header .origin-close:hover { background: var(--bg-section); color: var(--text-primary); }
+        .origin-modal-body {
+            padding: 20px; overflow-y: auto; flex: 1;
+        }
+        .origin-section {
+            margin-bottom: 16px;
+        }
+        .origin-section-title {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--accent); font-weight: 700; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .origin-formula {
+            background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 8px; padding: 14px 16px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px; color: #c4b5fd; line-height: 1.6;
+        }
+        .origin-formula .op { color: #f59e0b; font-weight: 700; }
+        .origin-formula .val-pos { color: #22c55e; }
+        .origin-formula .val-neg { color: #ef4444; }
+        .origin-desc {
+            font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+        }
+        .origin-desc code {
+            background: rgba(99,102,241,0.12); color: var(--accent);
+            padding: 1px 6px; border-radius: 4px; font-size: 11px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .origin-tag {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 10px; font-weight: 600; margin: 0 2px;
+        }
+        .origin-tag.calc { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .origin-tag.source { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .origin-tag.section { background: rgba(99,102,241,0.15); color: #6366f1; }
+        .origin-values-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .origin-val-card {
+            background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px;
+        }
+        .origin-val-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .origin-val-num { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .origin-detail-table {
+            width: 100%; border-collapse: collapse; margin-top: 8px;
+        }
+        .origin-detail-table th {
+            background: var(--bg-primary); padding: 6px 10px; text-align: left;
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border);
+            position: static;
+        }
+        .origin-detail-table td {
+            padding: 6px 10px; font-size: 11px; border-bottom: 1px solid rgba(42,46,66,0.3);
+            color: var(--text-secondary); text-align: left; white-space: normal;
+        }
+        .origin-info-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%; font-size: 9px; font-weight: 700;
+            background: rgba(99,102,241,0.15); color: var(--accent); cursor: pointer;
+            margin-left: 4px; transition: all 0.15s; vertical-align: middle; border: none;
+        }
+        .origin-info-icon:hover { background: rgba(99,102,241,0.3); transform: scale(1.15); }
+
+        /* ===== Chat Widget ===== */
+        .chat-fab {
+            position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px;
+            border-radius: 50%; background: var(--accent); border: none; color: white;
+            cursor: pointer; box-shadow: 0 4px 20px rgba(99,102,241,0.4); z-index: 3000;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .chat-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(99,102,241,0.5); }
+        .chat-fab.active { background: var(--bg-section); color: var(--text-muted); box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+
+        .chat-panel {
+            position: fixed; bottom: 24px; right: 86px; width: 440px; height: 600px;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+            box-shadow: 0 16px 64px rgba(0,0,0,0.5); z-index: 3000;
+            display: none; flex-direction: column; overflow: hidden;
+        }
+        .chat-panel.open { display: flex; }
+        @media (max-width: 600px) {
+            .chat-panel { width: calc(100vw - 16px); right: 8px; bottom: 84px; height: calc(100vh - 120px); }
+        }
+
+        .chat-hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-section);
+        }
+        .chat-hdr-left { display: flex; align-items: center; gap: 10px; }
+        .chat-hdr-left h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-primary); }
+        .chat-model-badge {
+            font-size: 9px; padding: 2px 8px; border-radius: 10px;
+            background: rgba(99,102,241,0.15); color: var(--accent); font-weight: 600;
+        }
+        .chat-hdr-actions { display: flex; gap: 4px; }
+        .chat-hdr-actions button {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            padding: 4px 6px; border-radius: 4px; font-size: 14px; transition: all 0.15s;
+        }
+        .chat-hdr-actions button:hover { background: var(--bg-primary); color: var(--text-primary); }
+
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 16px; display: flex;
+            flex-direction: column; gap: 12px;
+        }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .chat-msg {
+            max-width: 88%; padding: 10px 14px; border-radius: 12px;
+            font-size: 12px; line-height: 1.65; word-wrap: break-word;
+        }
+        .chat-msg.user {
+            align-self: flex-end; background: var(--accent); color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.assistant {
+            align-self: flex-start; background: var(--bg-section); color: var(--text-secondary);
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.assistant code {
+            background: rgba(99,102,241,0.12); color: var(--accent);
+            padding: 1px 4px; border-radius: 3px; font-size: 11px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .chat-msg.assistant pre {
+            background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 6px; padding: 10px; overflow-x: auto; margin: 8px 0;
+            font-size: 11px; line-height: 1.5;
+        }
+        .chat-msg.assistant pre code {
+            background: none; padding: 0; border-radius: 0;
+        }
+        .chat-msg.assistant strong { color: var(--text-primary); }
+        .chat-msg.assistant ul, .chat-msg.assistant ol {
+            margin: 4px 0; padding-left: 18px;
+        }
+        .chat-msg.assistant li { margin-bottom: 2px; }
+        .chat-msg.assistant h1,.chat-msg.assistant h2,.chat-msg.assistant h3,.chat-msg.assistant h4 {
+            color: var(--text-primary); margin: 8px 0 4px; font-size: 13px;
+        }
+        .chat-msg.system {
+            align-self: center; background: none; color: var(--text-muted);
+            font-size: 10px; font-style: italic; padding: 4px 0; text-align: center;
+        }
+        .chat-typing { display: inline-flex; gap: 4px; padding: 4px 0; }
+        .chat-typing span {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+            animation: chatBounce 1.4s infinite ease-in-out;
+        }
+        .chat-typing span:nth-child(2) { animation-delay: 0.16s; }
+        .chat-typing span:nth-child(3) { animation-delay: 0.32s; }
+        @keyframes chatBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-input-area {
+            display: flex; gap: 8px; padding: 12px 16px;
+            border-top: 1px solid var(--border); background: var(--bg-section);
+        }
+        .chat-input-area textarea {
+            flex: 1; background: var(--bg-primary); border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px 12px; color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 12px; outline: none;
+            resize: none; max-height: 80px; min-height: 36px; transition: border-color 0.2s;
+        }
+        .chat-input-area textarea:focus { border-color: var(--accent); }
+        .chat-input-area textarea::placeholder { color: var(--text-muted); }
+        .chat-send-btn {
+            width: 36px; height: 36px; border-radius: 8px; background: var(--accent);
+            border: none; color: white; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; transition: all 0.15s; align-self: flex-end;
+        }
+        .chat-send-btn:hover { background: #5b5fc7; }
+        .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Chat Settings */
+        .chat-settings-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px); z-index: 4000;
+            display: none; align-items: center; justify-content: center;
+        }
+        .chat-settings-overlay.open { display: flex; }
+        .chat-settings-modal {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; width: min(480px, 92vw); max-height: 85vh;
+            box-shadow: 0 16px 64px rgba(0,0,0,0.6); overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .chat-settings-hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
+        }
+        .chat-settings-hdr h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+        .chat-settings-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .chat-settings-row { margin-bottom: 16px; }
+        .chat-settings-row label {
+            display: block; font-size: 10px; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;
+        }
+        .chat-settings-row select, .chat-settings-row input[type="text"], .chat-settings-row input[type="password"] {
+            width: 100%; box-sizing: border-box; background: var(--bg-primary);
+            border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+            color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 12px;
+            outline: none; transition: border-color 0.2s;
+        }
+        .chat-settings-row select:focus, .chat-settings-row input:focus { border-color: var(--accent); }
+        .chat-settings-hint { font-size: 10px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+        .chat-settings-hint a { color: var(--accent); text-decoration: none; }
+        .chat-settings-hint a:hover { text-decoration: underline; }
+
+        .chat-provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .chat-prov-card {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.15s; background: var(--bg-primary); text-align: center;
+        }
+        .chat-prov-card:hover { border-color: var(--accent); background: rgba(99,102,241,0.06); }
+        .chat-prov-card.selected { border-color: var(--accent); background: rgba(99,102,241,0.12); }
+        .chat-prov-name { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+        .chat-prov-card.selected .chat-prov-name { color: var(--accent); }
+        .chat-prov-badge {
+            font-size: 8px; padding: 1px 6px; border-radius: 8px; font-weight: 700;
+        }
+        .chat-prov-badge.free { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .chat-prov-badge.paid { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+        .chat-settings-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 14px 20px; border-top: 1px solid var(--border);
+        }
+        .chat-settings-footer button {
+            padding: 8px 20px; border-radius: 6px; font-family: 'Inter', sans-serif;
+            font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+        }
+
+        /* Chart type selector grid */
+        .chart-type-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px;
+        }
+        .chart-type-opt {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border);
+            cursor: pointer; transition: all 0.15s; background: var(--bg-primary);
+        }
+        .chart-type-opt:hover { border-color: var(--accent); background: rgba(99,102,241,0.06); }
+        .chart-type-opt.selected { border-color: var(--accent); background: rgba(99,102,241,0.12); }
+        .chart-type-opt svg { width: 24px; height: 24px; opacity: 0.6; }
+        .chart-type-opt.selected svg { opacity: 1; }
+        .chart-type-opt span { font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .chart-type-opt.selected span { color: var(--accent); }
+
+        /* Column config panel */
+        .col-config-panel { position: relative; }
+        .col-config-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px); right: 0;
+            min-width: 260px; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 200; padding: 8px 0;
+        }
+        .col-config-dropdown.open { display: block; }
+        .col-config-dropdown h4 {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); padding: 10px 14px 4px; margin: 0; font-weight: 700;
+        }
+        .col-config-item {
+            display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+            cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: background 0.1s;
+        }
+        .col-config-item:hover { background: var(--bg-hover); }
+        .col-config-item input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+        .col-config-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* Summary P/R tags */
+        .summary-values { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+        .summary-line { display: flex; align-items: baseline; gap: 8px; }
+        .summary-tag {
+            font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+            text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;
+        }
+        .tag-prev { background: rgba(99,102,241,0.15); color: var(--accent); }
+        .tag-real { background: rgba(34,197,94,0.12); color: var(--green); }
+        .summary-sm { font-size: 16px !important; font-weight: 600 !important; }
+
+        /* Table header group */
+        th.th-group { background: var(--bg-primary); font-size: 10px; color: var(--accent); border-bottom: 1px solid var(--border); }
+        th.th-prev { background: rgba(99,102,241,0.06); }
+        th.th-real { background: rgba(34,197,94,0.04); }
+        td.td-prev { background: rgba(99,102,241,0.03); }
+        td.td-real { background: rgba(34,197,94,0.02); }
+
         @media (max-width: 768px) {
             .header { padding: 16px; }
             .summary-bar { padding: 16px; }
@@ -457,31 +1181,6 @@
             input[type="text"] { width: 200px; }
         }
 
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-            margin-top: 16px;
-            border-bottom: 1px solid var(--border);
-            padding: 0 32px;
-        }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 12px 24px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover { color: var(--text-primary); }
-        .tab-btn.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
     </style>
 </head>
 <body>
@@ -495,15 +1194,31 @@
         <div class="controls">
             <div class="control-group">
                 <label>API URL</label>
-                <input type="text" id="apiUrl" value="https://api-dados.pluralmed.com.br" placeholder="http://localhost:8000">
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
             </div>
             <div class="control-group">
                 <label>API Key</label>
-                <input type="password" id="apiKey" placeholder="X-API-Key">
+                <input type="password" id="apiKey" value="dev_sankhya_key_12345" placeholder="X-API-Key">
             </div>
             <div class="control-group">
                 <label>Competência</label>
-                <input type="month" id="competencia" placeholder="Todos">
+                <div class="cal-picker" id="calPicker">
+                    <button type="button" class="cal-btn" id="calBtn" onclick="toggleCalendar()">Todas</button>
+                    <div class="cal-dropdown" id="calDropdown">
+                        <div class="cal-selected-tags" id="calTags"></div>
+                        <div class="cal-header">
+                            <button type="button" class="cal-nav" onclick="calNavYear(-1)">◀</button>
+                            <span id="calYear">2026</span>
+                            <button type="button" class="cal-nav" onclick="calNavYear(1)">▶</button>
+                        </div>
+                        <div class="cal-grid" id="calGrid"></div>
+                        <div class="cal-actions">
+                            <button type="button" onclick="calClearAll()">Limpar</button>
+                            <button type="button" onclick="calSelectAll()">Todos do Ano</button>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="competencia" value="">
             </div>
             <div class="control-group">
                 <label>Município</label>
@@ -544,14 +1259,25 @@
                 <label>&nbsp;</label>
                 <button class="btn btn-ghost" onclick="toggleAllSections()">▶ Expandir / Recolher</button>
             </div>
+            <div class="control-group col-config-panel">
+                <label>&nbsp;</label>
+                <button class="btn btn-ghost" onclick="toggleColConfig()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Colunas
+                </button>
+                <div class="col-config-dropdown" id="colConfigDropdown">
+                    <h4>Colunas Visíveis</h4>
+                    <div id="colConfigItems"></div>
+                    <div class="col-config-sep"></div>
+                    <div style="padding:6px 14px;">
+                        <button class="btn btn-ghost" style="width:100%;justify-content:center;font-size:11px;padding:4px 8px;" onclick="resetColumnConfig()">Restaurar Padrão</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('gerencial')">DRE GERENCIAL (Orçado)</button>
-        <button class="tab-btn" onclick="switchTab('consolidada')">DRE CONSOLIDADA (Realizado)</button>
-    </div>
+
 
     <div id="statusMsg" class="status-msg"></div>
 
@@ -559,27 +1285,50 @@
     <div class="summary-bar" id="summaryBar" style="display:none;">
         <div class="summary-card receita">
             <div class="summary-label">Receita Bruta</div>
-            <div class="summary-value" id="sumReceita">—</div>
+            <div class="summary-values">
+                <div class="summary-line"><span class="summary-tag tag-prev">P</span><span class="summary-value" id="sumReceitaP">—</span></div>
+                <div class="summary-line"><span class="summary-tag tag-real">R</span><span class="summary-value summary-sm" id="sumReceitaR">—</span></div>
+            </div>
             <div class="summary-indicator" id="sumReceitaInd"></div>
         </div>
         <div class="summary-card margem">
             <div class="summary-label">Margem Bruta</div>
-            <div class="summary-value" id="sumMargem">—</div>
+            <div class="summary-values">
+                <div class="summary-line"><span class="summary-tag tag-prev">P</span><span class="summary-value" id="sumMargemP">—</span></div>
+                <div class="summary-line"><span class="summary-tag tag-real">R</span><span class="summary-value summary-sm" id="sumMargemR">—</span></div>
+            </div>
             <div class="summary-indicator" id="sumMargemInd"></div>
         </div>
         <div class="summary-card ebtida">
             <div class="summary-label">EBTIDA</div>
-            <div class="summary-value" id="sumEbtida">—</div>
+            <div class="summary-values">
+                <div class="summary-line"><span class="summary-tag tag-prev">P</span><span class="summary-value" id="sumEbtidaP">—</span></div>
+                <div class="summary-line"><span class="summary-tag tag-real">R</span><span class="summary-value summary-sm" id="sumEbtidaR">—</span></div>
+            </div>
             <div class="summary-indicator" id="sumEbtidaInd"></div>
         </div>
         <div class="summary-card lucro">
             <div class="summary-label">Lucro Líquido Final</div>
-            <div class="summary-value" id="sumLucro">—</div>
+            <div class="summary-values">
+                <div class="summary-line"><span class="summary-tag tag-prev">P</span><span class="summary-value" id="sumLucroP">—</span></div>
+                <div class="summary-line"><span class="summary-tag tag-real">R</span><span class="summary-value summary-sm" id="sumLucroR">—</span></div>
+            </div>
             <div class="summary-indicator" id="sumLucroInd"></div>
         </div>
     </div>
 
     <!-- DRE Table -->
+    <div class="dre-action-bar" id="dreActionBar" style="display:none">
+        <div class="dre-actions-left">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600;">Tabela DRE</span>
+        </div>
+        <div class="dre-actions-right">
+            <button class="btn-export-dre" onclick="exportDreCSV()" title="Exportar tabela DRE para CSV">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+            </button>
+        </div>
+    </div>
     <div class="table-container">
         <div id="content">
             <div class="empty-state">
@@ -587,6 +1336,272 @@
                     <path d="M3 10h18M3 14h18M3 18h18M3 6h18"/>
                 </svg>
                 <p>Configure a API e clique em <strong>Carregar</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Value Origin Modal -->
+    <div class="origin-overlay" id="originOverlay" onclick="if(event.target===this)closeOriginModal()">
+        <div class="origin-modal">
+            <div class="origin-modal-header">
+                <h3 id="originTitle">Origem do Valor</h3>
+                <button class="origin-close" onclick="closeOriginModal()">&times;</button>
+            </div>
+            <div class="origin-modal-body" id="originBody"></div>
+        </div>
+    </div>
+
+    <!-- Data Cube -->
+    <hr class="cube-divider">
+    <div class="cube-container" id="cubeContainer">
+        <div class="cube-header">
+            <div class="cube-header-left">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    Cubo de Dados
+                </h2>
+            </div>
+            <div class="cube-header-actions">
+                <button class="cube-mode-btn" id="cubeBtnBars" onclick="cubeCycleMode('bars')" title="Barras nos valores">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+                    Barras
+                </button>
+                <button class="cube-mode-btn" id="cubeBtnHeat" onclick="cubeCycleMode('heatmap')" title="Heatmap de intensidade">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Heatmap
+                </button>
+                <button class="cube-mode-btn" id="cubeBtnPct" onclick="cubeCycleMode('pct')" title="Mostrar % do total">
+                    %
+                </button>
+                <button class="cube-export-btn" onclick="cubeExportCSV()" title="Exportar como CSV">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="cube-controls-card">
+            <div class="cube-ctrl-group">
+                <label>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    Linhas
+                </label>
+                <select id="cubeRows" onchange="renderCube()">
+                    <option value="tipo">Tipo DRE</option>
+                    <option value="empresa">Empresa</option>
+                    <option value="municipio">Município</option>
+                    <option value="competencia">Competência</option>
+                </select>
+            </div>
+            <div class="cube-ctrl-group">
+                <label>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="21"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="18" y1="3" x2="18" y2="21"/></svg>
+                    Colunas
+                </label>
+                <select id="cubeCols" onchange="renderCube()">
+                    <option value="competencia">Competência</option>
+                    <option value="empresa">Empresa</option>
+                    <option value="tipo">Tipo DRE</option>
+                    <option value="municipio">Município</option>
+                </select>
+            </div>
+            <div class="cube-ctrl-group">
+                <label>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    Valor
+                </label>
+                <select id="cubeVal" onchange="renderCube()">
+                    <option value="valor_previsto">Previsto</option>
+                    <option value="valor_realizado">Realizado</option>
+                </select>
+            </div>
+            <div class="cube-ctrl-group">
+                <label>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    Agregação
+                </label>
+                <select id="cubeAgg" onchange="renderCube()">
+                    <option value="sum">Soma</option>
+                    <option value="count">Contagem</option>
+                    <option value="avg">Média</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="cube-stats" id="cubeStats"></div>
+        <div class="cube-chip-bar" id="cubeChips"></div>
+        <div class="cube-table-wrap" style="max-height:600px; overflow:auto;">
+            <div id="cubeContent"></div>
+        </div>
+    </div>
+
+    <!-- Chart Builder -->
+    <hr class="charts-divider">
+    <div class="charts-container" id="chartsContainer">
+        <div class="charts-header">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Gráficos Personalizados
+            </h2>
+            <button class="chart-add-btn" onclick="chartOpenConfig()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo Gráfico
+            </button>
+        </div>
+        <div class="charts-grid" id="chartsGrid">
+            <div class="chart-empty-state" id="chartsEmpty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="1" y="1" width="22" height="22" rx="3"/>
+                </svg>
+                <p>Nenhum gráfico criado. Clique em <strong>Novo Gráfico</strong> para começar.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Config Modal -->
+    <div class="chart-config-overlay" id="chartConfigOverlay" onclick="if(event.target===this)chartCloseConfig()">
+        <div class="chart-config-panel">
+            <div class="chart-config-header">
+                <h3 id="chartConfigTitle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Novo Gráfico
+                </h3>
+                <button class="chart-config-close" onclick="chartCloseConfig()">×</button>
+            </div>
+            <div class="chart-config-body">
+                <div class="cfg-row full">
+                    <div class="cfg-field">
+                        <label>Título do Gráfico</label>
+                        <input type="text" id="cfgChartTitle" placeholder="Ex: Receita por Empresa" oninput="chartPreview()">
+                    </div>
+                </div>
+                <div class="cfg-row full">
+                    <div class="cfg-field">
+                        <label>Tipo de Gráfico</label>
+                        <div class="chart-type-grid" id="cfgChartTypeGrid"></div>
+                    </div>
+                </div>
+                <div class="cfg-row">
+                    <div class="cfg-field">
+                        <label>Eixo X / Categorias</label>
+                        <select id="cfgChartX" onchange="chartPreview()">
+                            <option value="tipo">Tipo DRE</option>
+                            <option value="empresa">Empresa</option>
+                            <option value="municipio">Município</option>
+                            <option value="competencia">Competência</option>
+                        </select>
+                    </div>
+                    <div class="cfg-field">
+                        <label>Valor</label>
+                        <select id="cfgChartVal" onchange="chartPreview()">
+                            <option value="valor_realizado">Realizado</option>
+                            <option value="valor_previsto">Previsto</option>
+                            <option value="both">Previsto vs Realizado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="cfg-row">
+                    <div class="cfg-field">
+                        <label>Agregação</label>
+                        <select id="cfgChartAgg" onchange="chartPreview()">
+                            <option value="sum">Soma</option>
+                            <option value="avg">Média</option>
+                            <option value="count">Contagem</option>
+                        </select>
+                    </div>
+                    <div class="cfg-field">
+                        <label>Largura</label>
+                        <select id="cfgChartWidth">
+                            <option value="half">Meia largura</option>
+                            <option value="full">Largura total</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="cfg-row full">
+                    <div class="cfg-field">
+                        <label>Filtrar por Tipo DRE (opcional)</label>
+                        <div class="cfg-tipo-chips" id="cfgChartTipos"></div>
+                    </div>
+                </div>
+                <div class="cfg-row full">
+                    <div class="cfg-field">
+                        <label>Pré-visualização</label>
+                        <div class="cfg-preview" id="cfgChartPreview">
+                            <canvas id="cfgPreviewCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-config-footer">
+                <button class="cfg-btn-cancel" onclick="chartCloseConfig()">Cancelar</button>
+                <button class="cfg-btn-save" id="cfgBtnSave" onclick="chartSave()">Criar Gráfico</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <button class="chat-fab" id="chatFab" onclick="chatTogglePanel()" title="Chat com IA sobre DRE">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    </button>
+
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-hdr">
+            <div class="chat-hdr-left">
+                <h3>Chat DRE</h3>
+                <span class="chat-model-badge" id="chatModelBadge">—</span>
+            </div>
+            <div class="chat-hdr-actions">
+                <button onclick="chatClearHistory()" title="Limpar conversa">🗑</button>
+                <button onclick="chatOpenSettings()" title="Configurar modelo">⚙</button>
+                <button onclick="chatTogglePanel()" title="Fechar">✕</button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg system">Configure uma API Key em ⚙ para começar. Groq e Gemini oferecem chaves gratuitas!</div>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="chatInput" placeholder="Pergunte sobre a DRE..." rows="1" onkeydown="chatInputKey(event)"></textarea>
+            <button class="chat-send-btn" id="chatSendBtn" onclick="chatSend()" title="Enviar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Chat Settings Modal -->
+    <div class="chat-settings-overlay" id="chatSettingsOverlay" onclick="if(event.target===this)chatCloseSettings()">
+        <div class="chat-settings-modal">
+            <div class="chat-settings-hdr">
+                <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Configurações do Chat</h3>
+                <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px 8px;border-radius:4px;" onclick="chatCloseSettings()">&times;</button>
+            </div>
+            <div class="chat-settings-body">
+                <div class="chat-settings-row">
+                    <label>Provedor</label>
+                    <div class="chat-provider-grid" id="chatProviderGrid"></div>
+                </div>
+                <div class="chat-settings-row">
+                    <label>Modelo</label>
+                    <select id="chatModelSelect" onchange="chatSettingsPreview()"></select>
+                </div>
+                <div class="chat-settings-row">
+                    <label>API Key</label>
+                    <input type="password" id="chatApiKeyInput" placeholder="Cole sua API Key aqui...">
+                    <div class="chat-settings-hint" id="chatApiKeyHint"></div>
+                </div>
+                <div class="chat-settings-row">
+                    <label>URL Base (opcional — para provedores custom)</label>
+                    <input type="text" id="chatBaseUrlInput" placeholder="Deixe vazio para usar padrão">
+                    <div class="chat-settings-hint">Sobrescreve a URL base do provedor. Útil para proxies ou endpoints locais.</div>
+                </div>
+            </div>
+            <div class="chat-settings-footer">
+                <button style="background:none;border:1px solid var(--border);color:var(--text-secondary);" onclick="chatCloseSettings()">Cancelar</button>
+                <button style="background:var(--accent);border:1px solid var(--accent);color:white;" onclick="chatSaveSettings()">Salvar</button>
             </div>
         </div>
     </div>
@@ -600,7 +1615,216 @@
     let empresas = []; // Array of { id: 1, name: 'Empresa X' }
     let allEmpresas = []; // All companies (for filter dropdown)
     let allMunicipios = []; // All municipalities (for filter dropdown)
-    let currentTab = 'gerencial'; // 'gerencial' | 'consolidada'
+    let allCompetencias = []; // All competencias discovered from data (YYYY-MM)
+
+    // ======================================================================
+    // Calendar Picker (multi-select months)
+    // ======================================================================
+    let calSelectedComps = new Set(); // selected YYYY-MM values
+    let calViewYear = new Date().getFullYear();
+    const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    function toggleCalendar() {
+        const dd = document.getElementById('calDropdown');
+        const btn = document.getElementById('calBtn');
+        const wasOpen = dd.classList.contains('open');
+        // Close other dropdowns
+        document.querySelectorAll('.multi-select-dropdown').forEach(d => d.classList.remove('open'));
+        if (wasOpen) {
+            dd.classList.remove('open');
+            btn.classList.remove('open');
+        } else {
+            dd.classList.add('open');
+            btn.classList.add('open');
+            renderCalGrid();
+        }
+    }
+
+    function calNavYear(delta) {
+        calViewYear += delta;
+        renderCalGrid();
+    }
+
+    function renderCalGrid() {
+        document.getElementById('calYear').textContent = calViewYear;
+        const grid = document.getElementById('calGrid');
+        let html = '';
+        for (let m = 0; m < 12; m++) {
+            const comp = `${calViewYear}-${String(m+1).padStart(2,'0')}`;
+            const avail = allCompetencias.length === 0 || allCompetencias.includes(comp);
+            const sel = calSelectedComps.has(comp);
+            const cls = (sel ? ' selected' : '') + (!avail ? ' unavailable' : '');
+            html += `<button type="button" class="cal-month${cls}" data-comp="${comp}" onclick="calToggleMonth('${comp}')">${MONTH_NAMES[m]}</button>`;
+        }
+        grid.innerHTML = html;
+        renderCalTags();
+    }
+
+    function calToggleMonth(comp) {
+        // Don't toggle unavailable months
+        if (allCompetencias.length > 0 && !allCompetencias.includes(comp)) return;
+        if (calSelectedComps.has(comp)) calSelectedComps.delete(comp);
+        else calSelectedComps.add(comp);
+        updateCalBtn();
+        renderCalGrid();
+        syncCompetenciaInput();
+        if (dreData.length) refilterByComp();
+    }
+
+    function calClearAll() {
+        calSelectedComps.clear();
+        updateCalBtn();
+        renderCalGrid();
+        syncCompetenciaInput();
+        if (dreData.length) refilterByComp();
+    }
+
+    function calSelectAll() {
+        for (let m = 0; m < 12; m++) {
+            const comp = `${calViewYear}-${String(m+1).padStart(2,'0')}`;
+            if (allCompetencias.length === 0 || allCompetencias.includes(comp)) {
+                calSelectedComps.add(comp);
+            }
+        }
+        updateCalBtn();
+        renderCalGrid();
+        syncCompetenciaInput();
+        if (dreData.length) refilterByComp();
+    }
+
+    function calRemoveTag(comp) {
+        calSelectedComps.delete(comp);
+        updateCalBtn();
+        renderCalGrid();
+        syncCompetenciaInput();
+        if (dreData.length) refilterByComp();
+    }
+
+    function renderCalTags() {
+        const container = document.getElementById('calTags');
+        if (calSelectedComps.size === 0) { container.innerHTML = ''; return; }
+        const sorted = [...calSelectedComps].sort();
+        container.innerHTML = sorted.map(c => {
+            const [y,m] = c.split('-');
+            return `<span class="cal-tag">${MONTH_NAMES[parseInt(m)-1]}/${y}<span class="cal-tag-x" onclick="event.stopPropagation();calRemoveTag('${c}')">\u00d7</span></span>`;
+        }).join('');
+    }
+
+    function updateCalBtn() {
+        const btn = document.getElementById('calBtn');
+        const n = calSelectedComps.size;
+        if (n === 0) { btn.textContent = 'Todas'; return; }
+        if (n === 1) {
+            const c = [...calSelectedComps][0];
+            const [y,m] = c.split('-');
+            btn.textContent = `${MONTH_NAMES[parseInt(m)-1]}/${y}`;
+            return;
+        }
+        if (n <= 3) {
+            const labels = [...calSelectedComps].sort().map(c => {
+                const [y,m] = c.split('-');
+                return `${MONTH_NAMES[parseInt(m)-1]}/${y}`;
+            });
+            btn.textContent = labels.join(', ');
+            return;
+        }
+        btn.innerHTML = `${n} meses <span class="multi-select-count">${n}</span>`;
+    }
+
+    function syncCompetenciaInput() {
+        // For backward compat: set hidden input to single value if 1 selected, else empty
+        const input = document.getElementById('competencia');
+        if (calSelectedComps.size === 1) {
+            input.value = [...calSelectedComps][0];
+        } else {
+            input.value = '';
+        }
+    }
+
+    // Close calendar when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.cal-picker')) {
+            const dd = document.getElementById('calDropdown');
+            const btn = document.getElementById('calBtn');
+            if (dd) dd.classList.remove('open');
+            if (btn) btn.classList.remove('open');
+        }
+    });
+
+    // ======================================================================
+    // Column Configuration (persisted in localStorage)
+    // ======================================================================
+    const COLUMN_DEFS = [
+        { id: 'indicator',      label: 'Indicador (%)',           group: 'Geral' },
+        { id: 'total_prev',     label: 'Total Previsto (Mês)',    group: 'Totais' },
+        { id: 'total_real',     label: 'Total Realizado (Mês)',   group: 'Totais' },
+        { id: 'total_prev_ano', label: 'Previsto Anual (Proj.)',  group: 'Projeção' },
+        { id: 'total_real_ano', label: 'Realizado Anual (Proj.)', group: 'Projeção' },
+        { id: 'emp_prev',       label: 'Previsto por Empresa',    group: 'Empresas' },
+        { id: 'emp_real',       label: 'Realizado por Empresa',   group: 'Empresas' },
+    ];
+    const COLUMN_DEFAULTS = {
+        indicator: true, total_prev: true, total_real: true,
+        total_prev_ano: false, total_real_ano: false,
+        emp_prev: true, emp_real: false,
+    };
+
+    function loadColumnConfig() {
+        try {
+            const saved = localStorage.getItem('dre_column_config');
+            if (saved) return { ...COLUMN_DEFAULTS, ...JSON.parse(saved) };
+        } catch (e) { /* ignore */ }
+        return { ...COLUMN_DEFAULTS };
+    }
+    function saveColumnConfig() {
+        try { localStorage.setItem('dre_column_config', JSON.stringify(columnConfig)); } catch (e) { /* ignore */ }
+    }
+
+    let columnConfig = loadColumnConfig();
+
+    function toggleColConfig() {
+        const dd = document.getElementById('colConfigDropdown');
+        dd.classList.toggle('open');
+    }
+    function toggleColumn(colId) {
+        columnConfig[colId] = !columnConfig[colId];
+        saveColumnConfig();
+        renderColumnConfigUI();
+        if (dreData.length) applyFilters();
+    }
+    function resetColumnConfig() {
+        columnConfig = { ...COLUMN_DEFAULTS };
+        saveColumnConfig();
+        renderColumnConfigUI();
+        if (dreData.length) applyFilters();
+    }
+    function renderColumnConfigUI() {
+        const container = document.getElementById('colConfigItems');
+        let lastGroup = '';
+        let html = '';
+        COLUMN_DEFS.forEach(col => {
+            if (col.group !== lastGroup) {
+                if (lastGroup) html += '<div class="col-config-sep"></div>';
+                html += `<h4>${col.group}</h4>`;
+                lastGroup = col.group;
+            }
+            const checked = columnConfig[col.id] ? ' checked' : '';
+            html += `<label class="col-config-item">
+                <input type="checkbox"${checked} onchange="toggleColumn('${col.id}')">
+                <span>${col.label}</span>
+            </label>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // Close column config when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.col-config-panel')) {
+            const dd = document.getElementById('colConfigDropdown');
+            if (dd) dd.classList.remove('open');
+        }
+    });
+
 
     // ======================================================================
     // Helpers
@@ -656,16 +1880,13 @@
     }
 
     const CALCULATED_TYPES = new Set([
-        'RECEITA LÍQUIDA', 'MARGEM BRUTA', 'PLATAFORMA DE GESTÃO',
+        'RECEITA LÍQUIDA', 'MARGEM BRUTA', 'GASTO ADM',
         'EBTIDA', 'LUCRO LÍQUIDO', 'LUCRO LÍQUIDO FINAL'
     ]);
 
     // Renomeia tipos vindos do backend para exibição
     // Cobre tanto nomes antigos (CSP -) quanto novos do gold.py
     const TIPO_DISPLAY = {
-        'CSP - MERCADO EXTERNO': 'CUSTO DO SERVICO - MERCADO EXTERNO',
-        'CSP - MEDICOS': 'CUSTO DO SERVIÇO - MEDICOS',
-        'CSP - GASTO POR CONTRATOS': 'CUSTO DO SERVIÇO - GASTO POR CONTRATOS',
         'MARGEM BRUTA': 'MARGEM BRUTA (MARGEM DE CONTRIBUIÇÃO)',
     };
 
@@ -899,22 +2120,7 @@
         renderTable();
     }
 
-    // ======================================================================
-    // Tabs
-    // ======================================================================
-    function switchTab(tab) {
-        currentTab = tab;
-        // Update styling
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.textContent.toLowerCase().includes(tab)) btn.classList.add('active');
-        });
-        // Re-render
-        if (dreData.length) {
-            renderSummary();
-            renderTable();
-        }
-    }
+
 
     // ======================================================================
     // Load data from API
@@ -922,77 +2128,94 @@
     async function loadDRE() {
         const url = document.getElementById('apiUrl').value.replace(/\/+$/, '');
         const key = document.getElementById('apiKey').value;
-        const compInput = document.getElementById('competencia').value; // "YYYY-MM" from month input
 
         const btn = document.getElementById('btnLoad');
         btn.disabled = true;
         btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:0;border-width:2px"></div> Carregando...';
         showStatus('', '');
+        console.log('[DRE] loadDRE start', { url });
 
         try {
-            // Fetch ALL data and filter client-side for robustness
             const resp = await fetch(`${url}/sankhya/dre/v1/gold`, {
                 headers: { 'X-API-Key': key }
             });
+
+            console.log('[DRE] fetch response', resp.status, resp.statusText);
 
             if (!resp.ok) {
                 const err = await resp.json().catch(() => ({}));
                 throw new Error(err.detail || `HTTP ${resp.status}`);
             }
 
-            dreData = await resp.json();
+            allRawData = await resp.json();
+            console.log('[DRE] records received:', allRawData.length);
 
-            if (!dreData.length) {
+            if (!allRawData.length) {
                 showStatus('info', 'Nenhum dado retornado. Verifique se o pipeline DRE foi executado no Dagster.');
                 document.getElementById('content').innerHTML = '';
                 document.getElementById('summaryBar').style.display = 'none';
+                document.getElementById('cubeContainer').classList.remove('visible');
                 return;
             }
 
             // Normalize COMPETENCIA in all records
-            dreData.forEach(r => {
+            allRawData.forEach(r => {
                 r._comp = normalizeComp(r.COMPETENCIA);
                 if (r.pagamentos) {
                     r.pagamentos.forEach(p => { p._comp = normalizeComp(p.COMPETENCIA); });
                 }
             });
 
-            // Client-side filter by competencia
-            if (compInput) {
-                const filtered = dreData.filter(r => r._comp === compInput);
-                if (!filtered.length) {
-                    const normComps = [...new Set(dreData.map(r => r._comp))];
-                    showStatus('info',
-                        `Nenhum dado para competência "${compInput}". ` +
-                        `Competências disponíveis: ${normComps.sort().join(', ')}`
-                    );
-                    document.getElementById('content').innerHTML = '';
-                    document.getElementById('summaryBar').style.display = 'none';
-                    return;
-                }
-                dreData = filtered;
-            }
+            // Discover available competencias for calendar
+            allCompetencias = [...new Set(allRawData.map(r => r._comp).filter(Boolean))].sort();
+            renderCalGrid();
 
-            // Discover companies with names
-            const empMap = new Map();
-            dreData.forEach(r => {
-                if (!empMap.has(r.CODEMP)) {
-                    empMap.set(r.CODEMP, r.NOMEFANTASIA || `EMP ${r.CODEMP}`);
-                }
-            });
-            empresas = Array.from(empMap.entries())
-                .map(([id, name]) => ({ id, name }))
-                .sort((a, b) => a.id - b.id);
-
-            populateFilters();
-            applyFilters();
+            // Apply competencia filter
+            refilterByComp();
 
         } catch (e) {
+            console.error('[DRE] Error:', e);
             showStatus('error', `Erro: ${e.message}`);
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Carregar';
         }
+    }
+
+    let allRawData = []; // full unfiltered dataset
+
+    /** Re-filter dreData by selected competencias and re-render everything */
+    function refilterByComp() {
+        if (calSelectedComps.size > 0) {
+            dreData = allRawData.filter(r => calSelectedComps.has(r._comp));
+            if (!dreData.length) {
+                showStatus('info', `Nenhum dado para as competências selecionadas.`);
+                document.getElementById('content').innerHTML = '';
+                document.getElementById('summaryBar').style.display = 'none';
+                document.getElementById('cubeContainer').classList.remove('visible');
+                return;
+            }
+        } else {
+            dreData = [...allRawData];
+        }
+
+        // Discover companies
+        const empMap = new Map();
+        dreData.forEach(r => {
+            if (!empMap.has(r.CODEMP)) {
+                empMap.set(r.CODEMP, r.NOMEFANTASIA || `EMP ${r.CODEMP}`);
+            }
+        });
+        empresas = Array.from(empMap.entries())
+            .map(([id, name]) => ({ id, name }))
+            .sort((a, b) => a.id - b.id);
+
+        populateFilters();
+        applyFilters();
+        renderCube();
+        document.getElementById('cubeContainer').classList.add('visible');
+        showChartsContainer();
+        console.log('[DRE] render complete', { empresas: empresas.length, rows: dreData.length });
     }
 
     // ======================================================================
@@ -1001,28 +2224,32 @@
     function renderSummary() {
         const filtered = getFilteredData();
         const summaries = filtered.filter(r => r.agrupador === 'S');
-        const valProp = currentTab === 'gerencial' ? 'valor_previsto' : 'valor_realizado';
 
-        const get = (tipo) => {
-            const rows = summaries.filter(r => r.tipo === tipo);
-            return rows.reduce((acc, r) => acc + (r[valProp] || 0), 0);
-        };
+        const getP = (tipo) => summaries.filter(r => r.tipo === tipo).reduce((a, r) => a + (r.valor_previsto || 0), 0);
+        const getR = (tipo) => summaries.filter(r => r.tipo === tipo).reduce((a, r) => a + (r.valor_realizado || 0), 0);
 
-        const receita = get('RECEITA BRUTA');
-        const margem = get('MARGEM BRUTA');
-        const ebtida = get('EBTIDA');
-        const lucro = get('LUCRO LÍQUIDO FINAL');
+        const receitaP = getP('RECEITA BRUTA'),  receitaR = getR('RECEITA BRUTA');
+        const margemP  = getP('MARGEM BRUTA'),   margemR  = getR('MARGEM BRUTA');
+        const ebtidaP  = getP('EBTIDA'),         ebtidaR  = getR('EBTIDA');
+        const lucroP   = getP('LUCRO LÍQUIDO FINAL'), lucroR = getR('LUCRO LÍQUIDO FINAL');
 
-        document.getElementById('sumReceita').textContent = fmtBRL(receita);
-        document.getElementById('sumMargem').textContent = fmtBRL(margem);
-        document.getElementById('sumEbtida').textContent = fmtBRL(ebtida);
-        document.getElementById('sumLucro').textContent = fmtBRL(lucro);
+        document.getElementById('sumReceitaP').textContent = fmtBRL(receitaP);
+        document.getElementById('sumReceitaR').textContent = fmtBRL(receitaR);
+        document.getElementById('sumMargemP').textContent  = fmtBRL(margemP);
+        document.getElementById('sumMargemR').textContent  = fmtBRL(margemR);
+        document.getElementById('sumEbtidaP').textContent  = fmtBRL(ebtidaP);
+        document.getElementById('sumEbtidaR').textContent  = fmtBRL(ebtidaR);
+        document.getElementById('sumLucroP').textContent   = fmtBRL(lucroP);
+        document.getElementById('sumLucroR').textContent   = fmtBRL(lucroR);
 
-        const pct = (v) => receita ? `${((v/receita)*100).toFixed(1)}% da receita` : '';
+        const pctP = (v) => receitaP ? `P: ${((v/receitaP)*100).toFixed(1)}%` : '';
+        const pctR = (v) => receitaR ? `R: ${((v/receitaR)*100).toFixed(1)}%` : '';
+        const pctBoth = (vp, vr) => [pctP(vp), pctR(vr)].filter(Boolean).join(' | ');
+
         document.getElementById('sumReceitaInd').textContent = '';
-        document.getElementById('sumMargemInd').textContent = pct(margem);
-        document.getElementById('sumEbtidaInd').textContent = pct(ebtida);
-        document.getElementById('sumLucroInd').textContent = pct(lucro);
+        document.getElementById('sumMargemInd').textContent  = pctBoth(margemP, margemR);
+        document.getElementById('sumEbtidaInd').textContent  = pctBoth(ebtidaP, ebtidaR);
+        document.getElementById('sumLucroInd').textContent   = pctBoth(lucroP, lucroR);
 
         document.getElementById('summaryBar').style.display = 'grid';
     }
@@ -1031,12 +2258,15 @@
     // Table rendering
     // ======================================================================
     function renderTable() {
-        const valProp = currentTab === 'gerencial' ? 'valor_previsto' : 'valor_realizado';
+        const cfg = columnConfig;
 
-        // Pivot: key → { empresas: { empId: val }, pagamentos: [...] }
+        // Show DRE action bar
+        document.getElementById('dreActionBar').style.display = 'flex';
+
+        // Pivot: key → { emp_prev, emp_real, total_prev, total_real, pagamentos }
         const pivot = {};
-
         const filtered = getFilteredData();
+
         filtered.forEach(row => {
             const key = `${row.ordem}|${row.agrupador}|${row.tipo}|${row.subtipo}`;
             if (!pivot[key]) {
@@ -1046,15 +2276,20 @@
                     tipo: row.tipo,
                     subtipo: row.subtipo,
                     indicador: row.indicador || 0,
-                    empresas: {},
-                    total: 0,
+                    emp_prev: {},
+                    emp_real: {},
+                    total_prev: 0,
+                    total_real: 0,
                     pagamentos: [],
                 };
             }
-            const val = row[valProp] || 0;
+            const vp = row.valor_previsto || 0;
+            const vr = row.valor_realizado || 0;
             const empKey = String(row.CODEMP);
-            pivot[key].empresas[empKey] = (pivot[key].empresas[empKey] || 0) + val;
-            pivot[key].total += val;
+            pivot[key].emp_prev[empKey] = (pivot[key].emp_prev[empKey] || 0) + vp;
+            pivot[key].emp_real[empKey] = (pivot[key].emp_real[empKey] || 0) + vr;
+            pivot[key].total_prev += vp;
+            pivot[key].total_real += vr;
 
             if (row.pagamentos && row.pagamentos.length) {
                 pivot[key].pagamentos.push(...row.pagamentos);
@@ -1068,117 +2303,33 @@
             return (a.subtipo || '').localeCompare(b.subtipo || '', 'pt-BR');
         });
 
-        // Determine if usage logic is monthly (default) - used for ANO projection
-        // If total is X, ANO (Proj.) = X * 12.
-        // But if filtering multiple months, this logic changes. Assuming single month filter for now.
-        const isSingleMonth = !!document.getElementById('competencia').value;
+        const isSingleMonth = calSelectedComps.size === 1;
 
-        // Build HTML
+        // ---- Build header ----
         let html = '<table><thead><tr>';
-        html += '<th></th><th>DRE</th><th>%</th><th>MÊS</th>';
-        if (isSingleMonth) html += '<th>ANO (Proj.)</th>';
-        empresas.forEach(emp => { html += `<th>${emp.name}</th>`; });
+        html += '<th></th><th>DRE</th>';
+        if (cfg.indicator)      html += '<th>%</th>';
+        if (cfg.total_prev)     html += '<th class="th-prev">Previsto</th>';
+        if (cfg.total_real)     html += '<th class="th-real">Realizado</th>';
+        if (isSingleMonth && cfg.total_prev_ano) html += '<th class="th-prev">Prev. Anual</th>';
+        if (isSingleMonth && cfg.total_real_ano) html += '<th class="th-real">Real. Anual</th>';
+        empresas.forEach(emp => {
+            if (cfg.emp_prev) html += `<th class="th-prev">${emp.name} (P)</th>`;
+            if (cfg.emp_real) html += `<th class="th-real">${emp.name} (R)</th>`;
+        });
         html += '</tr></thead><tbody>';
 
-        // --- Generate Receita Líquida detail rows (Receita Bruta - Imposto per subtipo) ---
-        const recBrutaDetails = {}; // subtipo -> { empresas: {empId: val}, total }
-        const impostoDetails = {};
-        const cspDetails = {};  // subtipo -> { empresas: {empId: val}, total }
-        const CSP_TIPOS = new Set([
-            'CUSTO DO SERVICO - MERCADO EXTERNO',
-            'CUSTO DO SERVIÇO - MEDICOS',
-            'CUSTO DO SERVIÇO - GASTO POR CONTRATOS',
-            'CSP - MERCADO EXTERNO',
-            'CSP - MEDICOS',
-            'CSP - GASTO POR CONTRATOS',
-        ]);
-        rows.forEach(row => {
-            if (row.agrupador !== 'N') return;
-            let target = null;
-            if (row.tipo === 'RECEITA BRUTA') target = recBrutaDetails;
-            else if (row.tipo === 'IMPOSTO') target = impostoDetails;
-            else if (CSP_TIPOS.has(row.tipo)) target = cspDetails;
-            if (!target) return;
-            const sub = row.subtipo || '';
-            if (!target[sub]) target[sub] = { empresas: {}, total: 0 };
-            target[sub].total += row.total;
-            for (const [empId, val] of Object.entries(row.empresas)) {
-                target[sub].empresas[empId] = (target[sub].empresas[empId] || 0) + val;
-            }
-        });
-        // Build synthetic Receita Líquida detail rows
-        const allSubtipos = new Set([...Object.keys(recBrutaDetails), ...Object.keys(impostoDetails)]);
-        allSubtipos.forEach(sub => {
-            const rb = recBrutaDetails[sub] || { empresas: {}, total: 0 };
-            const imp = impostoDetails[sub] || { empresas: {}, total: 0 };
-            const empresasRL = {};
-            const allEmpIds = new Set([...Object.keys(rb.empresas), ...Object.keys(imp.empresas)]);
-            allEmpIds.forEach(empId => {
-                empresasRL[empId] = (rb.empresas[empId] || 0) - (imp.empresas[empId] || 0);
-            });
-            rows.push({
-                ordem: 300,
-                agrupador: 'N',
-                tipo: 'RECEITA LÍQUIDA',
-                subtipo: sub,
-                indicador: 0,
-                empresas: empresasRL,
-                total: rb.total - imp.total,
-                pagamentos: [],
-            });
-        });
-
-        // --- Generate MARGEM BRUTA detail rows (Receita Líquida - CSP per subtipo) ---
-        // Receita Líquida per subtipo = recBruta - imposto (already computed above)
-        const rlDetails = {};
-        allSubtipos.forEach(sub => {
-            const rb = recBrutaDetails[sub] || { empresas: {}, total: 0 };
-            const imp = impostoDetails[sub] || { empresas: {}, total: 0 };
-            rlDetails[sub] = { empresas: {}, total: rb.total - imp.total };
-            const empIds = new Set([...Object.keys(rb.empresas), ...Object.keys(imp.empresas)]);
-            empIds.forEach(empId => {
-                rlDetails[sub].empresas[empId] = (rb.empresas[empId] || 0) - (imp.empresas[empId] || 0);
-            });
-        });
-        const mbSubtipos = new Set([...Object.keys(rlDetails), ...Object.keys(cspDetails)]);
-        mbSubtipos.forEach(sub => {
-            const rl = rlDetails[sub] || { empresas: {}, total: 0 };
-            const csp = cspDetails[sub] || { empresas: {}, total: 0 };
-            const empresasMB = {};
-            const empIds = new Set([...Object.keys(rl.empresas), ...Object.keys(csp.empresas)]);
-            empIds.forEach(empId => {
-                empresasMB[empId] = (rl.empresas[empId] || 0) - (csp.empresas[empId] || 0);
-            });
-            rows.push({
-                ordem: 700,
-                agrupador: 'N',
-                tipo: 'MARGEM BRUTA',
-                subtipo: sub,
-                indicador: 0,
-                empresas: empresasMB,
-                total: rl.total - csp.total,
-                pagamentos: [],
-            });
-        });
-
-        // Re-sort after adding synthetic rows
-        rows.sort((a, b) => {
-            if (a.ordem !== b.ordem) return a.ordem - b.ordem;
-            if (a.agrupador !== b.agrupador) return a.agrupador === 'S' ? -1 : 1;
-            return (a.subtipo || '').localeCompare(b.subtipo || '', 'pt-BR');
-        });
-
+        // ---- Build rows ----
         let rowIdx = 0;
         rows.forEach(row => {
             const isSec = row.agrupador === 'S';
             const isCalc = CALCULATED_TYPES.has(row.tipo);
             const ordem = Number(row.ordem);
-            const hasDetails = !isSec ? false : rows.some(r => Number(r.ordem) === ordem && r.agrupador === 'N');
+            const hasDetails = !isSec ? false : rows.some(r => Number(r.ordem) === ordem + 1 && r.agrupador === 'N');
             const hasPag = !isSec && row.pagamentos.length > 0;
             const rid = `row-${rowIdx}`;
             rowIdx++;
 
-            // CSS classes
             let trClass = '';
             if (isSec && isCalc) trClass = 'section-row calculated-row';
             else if (isSec) trClass = 'section-row';
@@ -1187,8 +2338,7 @@
             const onclick = isSec
                 ? `onclick="toggleSection(${ordem})"`
                 : (hasPag ? `onclick="togglePayments('${rid}')"` : '');
-
-            const dataSec = !isSec ? `data-section="${ordem}"` : '';
+            const dataSec = !isSec ? `data-section="${ordem - 1}"` : '';
 
             html += `<tr class="${trClass}" ${onclick} ${dataSec} id="${isSec ? 'sec-' + ordem : rid}">`;
 
@@ -1205,29 +2355,43 @@
             const rawName = isSec ? row.tipo : row.subtipo;
             const name = TIPO_DISPLAY[rawName] || rawName;
             const badge = hasPag ? `<span class="pag-badge">${row.pagamentos.length} pag</span>` : '';
-            html += `<td>${name}${badge}</td>`;
+            const infoBtn = isSec ? `<button class="origin-info-icon" onclick="event.stopPropagation();openOriginModal('${row.tipo.replace(/'/g, "\\'")}','${row.agrupador}',${row.total_prev},${row.total_real},${row.indicador || 0})" title="Ver origem e cálculo">i</button>` : '';
+            html += `<td>${name}${badge}${infoBtn}</td>`;
 
             // Col: indicator
-            html += `<td class="indicator">${isSec ? fmtPct(row.indicador) : ''}</td>`;
+            if (cfg.indicator) html += `<td class="indicator">${isSec ? fmtPct(row.indicador) : ''}</td>`;
 
-            // Col: month total
-            html += `<td class="${valClass(row.total)}">${fmtBRL(row.total)}</td>`;
+            // Col: total previsto
+            if (cfg.total_prev) html += `<td class="td-prev ${valClass(row.total_prev)}">${fmtBRL(row.total_prev)}</td>`;
 
-            // Col: Year Projection
-            if (isSingleMonth) {
-                const proj = row.total * 12;
-                html += `<td class="${valClass(proj)}">${fmtBRL(proj)}</td>`;
+            // Col: total realizado
+            if (cfg.total_real) html += `<td class="td-real ${valClass(row.total_real)}">${fmtBRL(row.total_real)}</td>`;
+
+            // Col: annual projections
+            if (isSingleMonth && cfg.total_prev_ano) {
+                const proj = row.total_prev * 12;
+                html += `<td class="td-prev ${valClass(proj)}">${fmtBRL(proj)}</td>`;
+            }
+            if (isSingleMonth && cfg.total_real_ano) {
+                const proj = row.total_real * 12;
+                html += `<td class="td-real ${valClass(proj)}">${fmtBRL(proj)}</td>`;
             }
 
             // Cols: per company
             empresas.forEach(emp => {
-                const v = row.empresas[emp.id] || 0;
-                html += `<td class="${valClass(v)}">${fmtBRL(v)}</td>`;
+                if (cfg.emp_prev) {
+                    const v = row.emp_prev[emp.id] || 0;
+                    html += `<td class="td-prev ${valClass(v)}">${fmtBRL(v)}</td>`;
+                }
+                if (cfg.emp_real) {
+                    const v = row.emp_real[emp.id] || 0;
+                    html += `<td class="td-real ${valClass(v)}">${fmtBRL(v)}</td>`;
+                }
             });
 
             html += '</tr>';
 
-            // Payment rows (hidden by default)
+            // ---- Payment rows (hidden by default) ----
             if (hasPag) {
                 row.pagamentos.forEach(pag => {
                     html += `<tr class="payment-row hidden" data-payments="${rid}">`;
@@ -1236,23 +2400,28 @@
                     const pagNat = pag.CODNAT ? `[${pag.CODNAT}]` : '';
                     html += `<td>${pagNat} ${pagDesc}</td>`;
 
-                    // Col: % (indicator) - empty
-                    html += '<td class="indicator"></td>';
+                    if (cfg.indicator) html += '<td class="indicator"></td>';
 
-                    // Col: MÊS - valor do pagamento
-                    const pagVal = valProp === 'valor_previsto' ? (pag.VLRDESDOB || 0) : (pag.VLRBAIXA || 0);
-                    html += `<td class="${valClass(pagVal)}">${fmtBRL(pagVal)}</td>`;
+                    const pagPrev = pag.VLRDESDOB || 0;
+                    const pagReal = pag.VLRBAIXA || 0;
 
-                    // Col: ANO (Proj.)
-                    if (isSingleMonth) html += '<td></td>';
+                    if (cfg.total_prev) html += `<td class="td-prev ${valClass(pagPrev)}">${fmtBRL(pagPrev)}</td>`;
+                    if (cfg.total_real) html += `<td class="td-real ${valClass(pagReal)}">${fmtBRL(pagReal)}</td>`;
 
-                    // Cols: per company - mostra valor na coluna da empresa do pagamento
+                    if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
+                    if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
+
                     const pagEmpId = String(pag.CODEMP);
                     empresas.forEach(emp => {
-                        if (emp.id === pagEmpId) {
-                            html += `<td class="${valClass(pagVal)}">${fmtBRL(pagVal)}</td>`;
-                        } else {
-                            html += '<td></td>';
+                        if (cfg.emp_prev) {
+                            html += emp.id === pagEmpId
+                                ? `<td class="td-prev ${valClass(pagPrev)}">${fmtBRL(pagPrev)}</td>`
+                                : '<td class="td-prev"></td>';
+                        }
+                        if (cfg.emp_real) {
+                            html += emp.id === pagEmpId
+                                ? `<td class="td-real ${valClass(pagReal)}">${fmtBRL(pagReal)}</td>`
+                                : '<td class="td-real"></td>';
                         }
                     });
                     html += '</tr>';
@@ -1313,9 +2482,1661 @@
         });
     }
 
+    // ======================================================================
+    // Data Cube (enhanced)
+    // ======================================================================
+    let cubeFilterTipo = null; // null = all
+    let cubeMode = { bars: false, heatmap: false, pct: false };
+    let cubeSortCol = null; // { idx: number, asc: boolean }
+    let _cubeCache = null; // cached pivot data for sorting/export
+
+    function getCubeDimValue(row, dim) {
+        switch (dim) {
+            case 'tipo':         return row.tipo || '(vazio)';
+            case 'empresa':      return row.NOMEFANTASIA || `EMP ${row.CODEMP}`;
+            case 'municipio':    return row.MUNICIPIO || '(vazio)';
+            case 'competencia':  return row._comp || '(vazio)';
+            default: return '?';
+        }
+    }
+
+    function cubeCycleMode(mode) {
+        cubeMode[mode] = !cubeMode[mode];
+        document.getElementById('cubeBtnBars').classList.toggle('active', cubeMode.bars);
+        document.getElementById('cubeBtnHeat').classList.toggle('active', cubeMode.heatmap);
+        document.getElementById('cubeBtnPct').classList.toggle('active', cubeMode.pct);
+        renderCubeTable();
+    }
+
+    function renderCubeChips() {
+        const sectionRows = dreData.filter(r => r.agrupador === 'S');
+        const tipoCounts = {};
+        sectionRows.forEach(r => { tipoCounts[r.tipo] = (tipoCounts[r.tipo] || 0) + 1; });
+        const tipos = Object.keys(tipoCounts).sort();
+        const container = document.getElementById('cubeChips');
+        let html = `<span class="cube-chip-label">Filtro:</span>`;
+        html += `<span class="cube-chip${cubeFilterTipo === null ? ' active' : ''}" onclick="cubeSetTipo(null)">Todos <span class="cube-chip-count">${sectionRows.length}</span></span>`;
+        tipos.forEach(t => {
+            const cnt = tipoCounts[t] || 0;
+            html += `<span class="cube-chip${cubeFilterTipo === t ? ' active' : ''}" onclick="cubeSetTipo('${t.replace(/'/g, "\\'")}')">${t} <span class="cube-chip-count">${cnt}</span></span>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function cubeSetTipo(tipo) {
+        cubeFilterTipo = tipo;
+        cubeSortCol = null;
+        renderCubeChips();
+        renderCubeTable();
+    }
+
+    function cubeSortBy(idx) {
+        if (cubeSortCol && cubeSortCol.idx === idx) {
+            cubeSortCol.asc = !cubeSortCol.asc;
+        } else {
+            cubeSortCol = { idx, asc: true };
+        }
+        renderCubeTable();
+    }
+
+    function renderCube() {
+        if (!dreData.length) return;
+        renderCubeChips();
+        renderCubeTable();
+    }
+
+    function renderCubeStats(data, valField, aggType) {
+        const vals = data.map(r => parseFloat(r[valField]) || 0);
+        const total = vals.reduce((a, b) => a + b, 0);
+        const avg = vals.length ? total / vals.length : 0;
+        const mx = vals.length ? Math.max(...vals) : 0;
+        const mn = vals.length ? Math.min(...vals) : 0;
+        const positive = vals.filter(v => v > 0).length;
+        const negative = vals.filter(v => v < 0).length;
+
+        const fmtCompact = (v) => {
+            const abs = Math.abs(v);
+            if (abs >= 1e6) return (v / 1e6).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + 'M';
+            if (abs >= 1e3) return (v / 1e3).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1}) + 'K';
+            return fmtBRL(v);
+        };
+
+        document.getElementById('cubeStats').innerHTML = `
+            <div class="cube-stat">
+                <div class="cube-stat-label">Total Geral</div>
+                <div class="cube-stat-value ${valClass(total)}">${fmtCompact(total)}</div>
+                <div class="cube-stat-sub">${data.length} registros</div>
+            </div>
+            <div class="cube-stat">
+                <div class="cube-stat-label">Média</div>
+                <div class="cube-stat-value ${valClass(avg)}">${fmtCompact(avg)}</div>
+                <div class="cube-stat-sub">por linha</div>
+            </div>
+            <div class="cube-stat">
+                <div class="cube-stat-label">Máximo</div>
+                <div class="cube-stat-value positive">${fmtCompact(mx)}</div>
+                <div class="cube-stat-sub">${positive} positivos</div>
+            </div>
+            <div class="cube-stat">
+                <div class="cube-stat-label">Mínimo</div>
+                <div class="cube-stat-value ${valClass(mn)}">${fmtCompact(mn)}</div>
+                <div class="cube-stat-sub">${negative} negativos</div>
+            </div>
+        `;
+    }
+
+    function renderCubeTable() {
+        const rowDim = document.getElementById('cubeRows').value;
+        const colDim = document.getElementById('cubeCols').value;
+        const valField = document.getElementById('cubeVal').value;
+        const aggType = document.getElementById('cubeAgg').value;
+
+        // Use section rows (agrupador=S) for aggregation
+        let data = dreData.filter(r => r.agrupador === 'S');
+        if (cubeFilterTipo) data = data.filter(r => r.tipo === cubeFilterTipo);
+
+        renderCubeStats(data, valField, aggType);
+
+        if (!data.length) {
+            document.getElementById('cubeContent').innerHTML = '<div class="empty-state" style="padding:40px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10h18M3 14h18M3 18h18M3 6h18"/></svg><p>Sem dados para a seleção atual.</p></div>';
+            return;
+        }
+
+        // Build pivot
+        const rowSet = new Set();
+        const colSet = new Set();
+        const cells = {};
+
+        data.forEach(row => {
+            const rk = getCubeDimValue(row, rowDim);
+            const ck = getCubeDimValue(row, colDim);
+            rowSet.add(rk);
+            colSet.add(ck);
+            const key = `${rk}|${ck}`;
+            if (!cells[key]) cells[key] = { sum: 0, count: 0 };
+            const v = parseFloat(row[valField]) || 0;
+            cells[key].sum += v;
+            cells[key].count += 1;
+        });
+
+        let rowKeys = [...rowSet].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        const colKeys = [...colSet].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+        const getVal = (rk, ck) => {
+            const c = cells[`${rk}|${ck}`];
+            if (!c) return 0;
+            if (aggType === 'sum') return c.sum;
+            if (aggType === 'count') return c.count;
+            if (aggType === 'avg') return c.count > 0 ? c.sum / c.count : 0;
+            return c.sum;
+        };
+
+        // Compute row totals for sorting
+        const rowTotals = {};
+        rowKeys.forEach(rk => {
+            rowTotals[rk] = colKeys.reduce((acc, ck) => acc + getVal(rk, ck), 0);
+        });
+
+        // Sort rows
+        if (cubeSortCol !== null) {
+            const si = cubeSortCol.idx;
+            const asc = cubeSortCol.asc;
+            rowKeys.sort((a, b) => {
+                let va, vb;
+                if (si === -1) { // sort by row label
+                    return asc ? a.localeCompare(b, 'pt-BR') : b.localeCompare(a, 'pt-BR');
+                } else if (si >= colKeys.length) { // sort by total
+                    va = rowTotals[a]; vb = rowTotals[b];
+                } else {
+                    va = getVal(a, colKeys[si]); vb = getVal(b, colKeys[si]);
+                }
+                return asc ? va - vb : vb - va;
+            });
+        }
+
+        const colTotals = new Array(colKeys.length).fill(0);
+        let grandTotal = 0;
+        rowKeys.forEach(rk => {
+            colKeys.forEach((ck, ci) => { colTotals[ci] += getVal(rk, ck); });
+            grandTotal += rowTotals[rk];
+        });
+
+        // Cache for export
+        _cubeCache = { rowKeys, colKeys, getVal, rowTotals, colTotals, grandTotal, rowDim, colDim, valField, aggType };
+
+        const fmt = aggType === 'count'
+            ? (v) => (v === 0 ? '—' : v.toLocaleString('pt-BR'))
+            : fmtBRL;
+
+        // Find max absolute value for bars/heatmap
+        let maxAbs = 0;
+        rowKeys.forEach(rk => colKeys.forEach(ck => {
+            maxAbs = Math.max(maxAbs, Math.abs(getVal(rk, ck)));
+        }));
+
+        const dimLabel = (dim) => ({
+            tipo: 'Tipo DRE', empresa: 'Empresa', municipio: 'Município', competencia: 'Competência'
+        })[dim] || dim;
+
+        // Sort icons
+        const sortIcon = (idx) => {
+            const isActive = cubeSortCol && cubeSortCol.idx === idx;
+            const arrow = isActive ? (cubeSortCol.asc ? '▲' : '▼') : '⇅';
+            return `<span class="sort-icon${isActive ? ' active' : ''}">${arrow}</span>`;
+        };
+
+        // Build table
+        const heatClass = cubeMode.heatmap ? ' heatmap' : '';
+        let html = `<table class="cube-table${heatClass}"><thead><tr>`;
+        html += `<th onclick="cubeSortBy(-1)">${dimLabel(rowDim)} ${sortIcon(-1)}</th>`;
+        colKeys.forEach((ck, ci) => {
+            html += `<th onclick="cubeSortBy(${ci})">${ck} ${sortIcon(ci)}</th>`;
+        });
+        html += `<th onclick="cubeSortBy(${colKeys.length})">Total ${sortIcon(colKeys.length)}</th></tr></thead><tbody>`;
+
+        rowKeys.forEach(rk => {
+            html += '<tr>';
+            html += `<td>${rk}</td>`;
+            colKeys.forEach((ck, ci) => {
+                const v = getVal(rk, ck);
+                let cellHtml = '';
+
+                // Bar mode
+                if (cubeMode.bars && maxAbs > 0 && v !== 0) {
+                    const pct = Math.min(Math.abs(v) / maxAbs * 100, 100);
+                    const barCls = v >= 0 ? 'bar-pos' : 'bar-neg';
+                    cellHtml += `<span class="cube-cell-bar ${barCls}" style="width:${pct.toFixed(1)}%"></span>`;
+                }
+
+                cellHtml += `<span class="cube-cell-val ${valClass(v)}">${fmt(v)}`;
+                // Pct mode
+                if (cubeMode.pct && grandTotal !== 0 && v !== 0) {
+                    const pctVal = ((v / grandTotal) * 100).toFixed(1);
+                    cellHtml += `<span class="cube-pct">${pctVal}%</span>`;
+                }
+                cellHtml += '</span>';
+
+                // Heatmap background
+                let style = '';
+                if (cubeMode.heatmap && maxAbs > 0 && v !== 0) {
+                    const intensity = Math.min(Math.abs(v) / maxAbs, 1);
+                    const alpha = (intensity * 0.25).toFixed(3);
+                    style = v >= 0
+                        ? `background:rgba(34,197,94,${alpha});`
+                        : `background:rgba(239,68,68,${alpha});`;
+                }
+
+                html += `<td style="${style}">${cellHtml}</td>`;
+            });
+            const rt = rowTotals[rk];
+            html += `<td class="total-col ${valClass(rt)}">${fmt(rt)}`;
+            if (cubeMode.pct && grandTotal !== 0 && rt !== 0) {
+                html += `<span class="cube-pct">${((rt / grandTotal) * 100).toFixed(1)}%</span>`;
+            }
+            html += '</td></tr>';
+        });
+
+        html += '</tbody><tfoot><tr>';
+        html += '<td>Total</td>';
+        colTotals.forEach(ct => {
+            html += `<td class="${valClass(ct)}">${fmt(ct)}`;
+            if (cubeMode.pct && grandTotal !== 0 && ct !== 0) {
+                html += `<span class="cube-pct">${((ct / grandTotal) * 100).toFixed(1)}%</span>`;
+            }
+            html += '</td>';
+        });
+        html += `<td class="total-col ${valClass(grandTotal)}">${fmt(grandTotal)}</td>`;
+        html += '</tr></tfoot></table>';
+
+        document.getElementById('cubeContent').innerHTML = html;
+    }
+
+    function cubeExportCSV() {
+        if (!_cubeCache) return;
+        const { rowKeys, colKeys, getVal, rowTotals, colTotals, grandTotal, rowDim } = _cubeCache;
+        const dimLabel = ({ tipo:'Tipo DRE', empresa:'Empresa', municipio:'Município', competencia:'Competência' })[rowDim] || rowDim;
+        let csv = [dimLabel, ...colKeys, 'Total'].map(c => `"${c}"`).join(';') + '\n';
+        rowKeys.forEach(rk => {
+            const vals = colKeys.map(ck => getVal(rk, ck));
+            csv += [`"${rk}"`, ...vals.map(v => v.toFixed(2)), rowTotals[rk].toFixed(2)].join(';') + '\n';
+        });
+        csv += ['"Total"', ...colTotals.map(v => v.toFixed(2)), grandTotal.toFixed(2)].join(';') + '\n';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `cubo_dre_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    // ======================================================================
+    // Chart Builder
+    // ======================================================================
+    const CHART_TYPES = [
+        { id: 'bar',       label: 'Barras',     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>' },
+        { id: 'line',      label: 'Linha',      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>' },
+        { id: 'pie',       label: 'Pizza',      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>' },
+        { id: 'doughnut',  label: 'Rosca',      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/><path d="M12 2v5"/></svg>' },
+        { id: 'polarArea', label: 'Polar',      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>' },
+        { id: 'radar',     label: 'Radar',      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 19 19.5 5 19.5 2 8.5"/><polygon points="12 6 17 9 15.5 15 8.5 15 7 9"/></svg>' },
+    ];
+
+    const CHART_COLORS = [
+        '#6366f1','#22c55e','#ef4444','#f59e0b','#06b6d4','#ec4899',
+        '#8b5cf6','#14b8a6','#f97316','#64748b','#a855f7','#10b981'
+    ];
+
+    let userCharts = []; // { id, title, type, xDim, valField, agg, tipos, width, chartInstance }
+    let chartEditId = null; // null = new, string = editing
+    let cfgPreviewChart = null;
+    let cfgSelectedType = 'bar';
+    let cfgSelectedTipos = new Set();
+
+    function loadUserCharts() {
+        try {
+            const s = localStorage.getItem('dre_user_charts');
+            if (s) {
+                const arr = JSON.parse(s);
+                return arr.map(c => ({ ...c, chartInstance: null }));
+            }
+        } catch (e) { /* ignore */ }
+        return [];
+    }
+    function saveUserCharts() {
+        try {
+            const toSave = userCharts.map(({ chartInstance, ...rest }) => rest);
+            localStorage.setItem('dre_user_charts', JSON.stringify(toSave));
+        } catch (e) { /* ignore */ }
+    }
+
+    function chartOpenConfig(editId) {
+        chartEditId = editId || null;
+        const overlay = document.getElementById('chartConfigOverlay');
+        overlay.classList.add('open');
+
+        // Reset or populate
+        if (chartEditId) {
+            const c = userCharts.find(u => u.id === chartEditId);
+            if (c) {
+                document.getElementById('cfgChartTitle').value = c.title;
+                cfgSelectedType = c.type;
+                document.getElementById('cfgChartX').value = c.xDim;
+                document.getElementById('cfgChartVal').value = c.valField;
+                document.getElementById('cfgChartAgg').value = c.agg;
+                document.getElementById('cfgChartWidth').value = c.width;
+                cfgSelectedTipos = new Set(c.tipos || []);
+                document.getElementById('cfgBtnSave').textContent = 'Salvar';
+                document.getElementById('chartConfigTitle').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Editar Gráfico';
+            }
+        } else {
+            document.getElementById('cfgChartTitle').value = '';
+            cfgSelectedType = 'bar';
+            document.getElementById('cfgChartX').value = 'tipo';
+            document.getElementById('cfgChartVal').value = 'valor_realizado';
+            document.getElementById('cfgChartAgg').value = 'sum';
+            document.getElementById('cfgChartWidth').value = 'half';
+            cfgSelectedTipos = new Set();
+            document.getElementById('cfgBtnSave').textContent = 'Criar Gráfico';
+            document.getElementById('chartConfigTitle').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Novo Gráfico';
+        }
+
+        renderChartTypeGrid();
+        renderCfgTipoChips();
+        chartPreview();
+    }
+
+    function chartCloseConfig() {
+        document.getElementById('chartConfigOverlay').classList.remove('open');
+        if (cfgPreviewChart) { cfgPreviewChart.destroy(); cfgPreviewChart = null; }
+    }
+
+    function renderChartTypeGrid() {
+        const grid = document.getElementById('cfgChartTypeGrid');
+        grid.innerHTML = CHART_TYPES.map(ct =>
+            `<div class="chart-type-opt${ct.id === cfgSelectedType ? ' selected' : ''}" onclick="cfgSelectType('${ct.id}')">${ct.icon}<span>${ct.label}</span></div>`
+        ).join('');
+    }
+
+    function cfgSelectType(type) {
+        cfgSelectedType = type;
+        renderChartTypeGrid();
+        chartPreview();
+    }
+
+    function renderCfgTipoChips() {
+        const tipos = [...new Set(dreData.filter(r => r.agrupador === 'S').map(r => r.tipo))].sort();
+        const container = document.getElementById('cfgChartTipos');
+        container.innerHTML = tipos.map(t =>
+            `<span class="cfg-tipo-chip${cfgSelectedTipos.has(t) ? ' selected' : ''}" onclick="cfgToggleTipo(this, '${t.replace(/'/g, "\\'")}')"> ${t}</span>`
+        ).join('');
+    }
+
+    function cfgToggleTipo(el, tipo) {
+        if (cfgSelectedTipos.has(tipo)) cfgSelectedTipos.delete(tipo);
+        else cfgSelectedTipos.add(tipo);
+        el.classList.toggle('selected');
+        chartPreview();
+    }
+
+    function buildChartData(xDim, valField, agg, tipos) {
+        let data = dreData.filter(r => r.agrupador === 'S');
+        if (tipos && tipos.size > 0) data = data.filter(r => tipos.has(r.tipo));
+
+        const isBoth = valField === 'both';
+        const fields = isBoth ? ['valor_previsto', 'valor_realizado'] : [valField];
+
+        const groups = {};
+        data.forEach(r => {
+            const label = getCubeDimValue(r, xDim);
+            if (!groups[label]) groups[label] = { sums: {}, counts: {} };
+            fields.forEach(f => {
+                if (!groups[label].sums[f]) { groups[label].sums[f] = 0; groups[label].counts[f] = 0; }
+                groups[label].sums[f] += (parseFloat(r[f]) || 0);
+                groups[label].counts[f] += 1;
+            });
+        });
+
+        const labels = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        const datasets = fields.map((f, fi) => {
+            const values = labels.map(l => {
+                const g = groups[l];
+                if (agg === 'sum') return g.sums[f];
+                if (agg === 'count') return g.counts[f];
+                if (agg === 'avg') return g.counts[f] > 0 ? g.sums[f] / g.counts[f] : 0;
+                return g.sums[f];
+            });
+            return {
+                label: isBoth ? (fi === 0 ? 'Previsto' : 'Realizado') : (f === 'valor_previsto' ? 'Previsto' : 'Realizado'),
+                data: values,
+                backgroundColor: isBoth
+                    ? (fi === 0 ? 'rgba(99,102,241,0.7)' : 'rgba(34,197,94,0.7)')
+                    : labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                borderColor: isBoth
+                    ? (fi === 0 ? '#6366f1' : '#22c55e')
+                    : labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                borderWidth: 1.5,
+            };
+        });
+
+        return { labels, datasets };
+    }
+
+    function chartPreview() {
+        const xDim = document.getElementById('cfgChartX').value;
+        const valField = document.getElementById('cfgChartVal').value;
+        const agg = document.getElementById('cfgChartAgg').value;
+
+        if (cfgPreviewChart) { cfgPreviewChart.destroy(); cfgPreviewChart = null; }
+
+        const canvas = document.getElementById('cfgPreviewCanvas');
+        if (!dreData.length) return;
+
+        const chartData = buildChartData(xDim, valField, agg, cfgSelectedTipos);
+        const isPie = ['pie','doughnut','polarArea'].includes(cfgSelectedType);
+
+        cfgPreviewChart = new Chart(canvas, {
+            type: cfgSelectedType,
+            data: chartData,
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                animation: { duration: 300 },
+                plugins: {
+                    legend: { display: chartData.datasets.length > 1 || isPie, labels: { color: '#8b90a5', font: { size: 10 } } },
+                    tooltip: {
+                        backgroundColor: '#1e2130', titleColor: '#e8eaf0', bodyColor: '#8b90a5',
+                        borderColor: '#2a2e42', borderWidth: 1,
+                        callbacks: {
+                            label: function(ctx) {
+                                const v = ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.parsed;
+                                return ` ${ctx.dataset.label}: ${typeof v === 'number' ? fmtBRL(v) : v}`;
+                            }
+                        }
+                    }
+                },
+                scales: isPie || cfgSelectedType === 'radar' ? {} : {
+                    x: { ticks: { color: '#5c6078', font: { size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(42,46,66,0.5)' } },
+                    y: { ticks: { color: '#5c6078', font: { size: 9 }, callback: v => fmtBRL(v) }, grid: { color: 'rgba(42,46,66,0.5)' } }
+                }
+            }
+        });
+    }
+
+    function chartSave() {
+        const title = document.getElementById('cfgChartTitle').value.trim() || 'Gráfico sem título';
+        const xDim = document.getElementById('cfgChartX').value;
+        const valField = document.getElementById('cfgChartVal').value;
+        const agg = document.getElementById('cfgChartAgg').value;
+        const width = document.getElementById('cfgChartWidth').value;
+
+        if (chartEditId) {
+            const idx = userCharts.findIndex(c => c.id === chartEditId);
+            if (idx >= 0) {
+                if (userCharts[idx].chartInstance) userCharts[idx].chartInstance.destroy();
+                userCharts[idx] = { ...userCharts[idx], title, type: cfgSelectedType, xDim, valField, agg, width, tipos: [...cfgSelectedTipos] };
+            }
+        } else {
+            userCharts.push({
+                id: 'chart_' + Date.now(),
+                title, type: cfgSelectedType, xDim, valField, agg, width,
+                tipos: [...cfgSelectedTipos],
+                chartInstance: null
+            });
+        }
+
+        saveUserCharts();
+        chartCloseConfig();
+        renderAllCharts();
+    }
+
+    function chartDelete(id) {
+        const idx = userCharts.findIndex(c => c.id === id);
+        if (idx >= 0) {
+            if (userCharts[idx].chartInstance) userCharts[idx].chartInstance.destroy();
+            userCharts.splice(idx, 1);
+            saveUserCharts();
+            renderAllCharts();
+        }
+    }
+
+    function chartDuplicate(id) {
+        const src = userCharts.find(c => c.id === id);
+        if (!src) return;
+        userCharts.push({
+            id: 'chart_' + Date.now(),
+            title: src.title + ' (cópia)',
+            type: src.type, xDim: src.xDim, valField: src.valField,
+            agg: src.agg, width: src.width, tipos: [...(src.tipos || [])],
+            chartInstance: null
+        });
+        saveUserCharts();
+        renderAllCharts();
+    }
+
+    function chartToggleWidth(id) {
+        const c = userCharts.find(u => u.id === id);
+        if (!c) return;
+        c.width = c.width === 'full' ? 'half' : 'full';
+        saveUserCharts();
+        renderAllCharts();
+    }
+
+    function chartExportPNG(id) {
+        const c = userCharts.find(u => u.id === id);
+        if (!c || !c.chartInstance) return;
+        const a = document.createElement('a');
+        a.href = c.chartInstance.toBase64Image();
+        a.download = `${c.title.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+        a.click();
+    }
+
+    function getChartTypeIcon(type) {
+        const ct = CHART_TYPES.find(t => t.id === type);
+        return ct ? ct.icon : '';
+    }
+
+    function renderAllCharts() {
+        const grid = document.getElementById('chartsGrid');
+        const empty = document.getElementById('chartsEmpty');
+
+        // Destroy old instances
+        userCharts.forEach(c => { if (c.chartInstance) { c.chartInstance.destroy(); c.chartInstance = null; } });
+
+        if (!userCharts.length) {
+            grid.innerHTML = '';
+            grid.appendChild(empty.cloneNode ? createEmptyState() : empty);
+            return;
+        }
+
+        let html = '';
+        userCharts.forEach(c => {
+            const fullCls = c.width === 'full' ? ' fullwidth' : '';
+            html += `<div class="chart-card${fullCls}" id="card-${c.id}">
+                <div class="chart-card-header">
+                    <div class="chart-card-title">
+                        <span class="chart-type-icon">${getChartTypeIcon(c.type)}</span>
+                        ${c.title}
+                    </div>
+                    <div class="chart-card-actions">
+                        <button title="Expandir/Reduzir" onclick="chartToggleWidth('${c.id}')">⇔</button>
+                        <button title="Editar" onclick="chartOpenConfig('${c.id}')">✎</button>
+                        <button title="Duplicar" onclick="chartDuplicate('${c.id}')">⧉</button>
+                        <button title="Exportar PNG" onclick="chartExportPNG('${c.id}')">📷</button>
+                        <button class="btn-delete" title="Excluir" onclick="chartDelete('${c.id}')">✕</button>
+                    </div>
+                </div>
+                <div class="chart-card-body"><canvas id="canvas-${c.id}"></canvas></div>
+            </div>`;
+        });
+        grid.innerHTML = html;
+
+        // Render each chart after DOM update
+        requestAnimationFrame(() => {
+            userCharts.forEach(c => {
+                const canvas = document.getElementById(`canvas-${c.id}`);
+                if (!canvas || !dreData.length) return;
+                const tiposSet = new Set(c.tipos || []);
+                const chartData = buildChartData(c.xDim, c.valField, c.agg, tiposSet);
+                const isPie = ['pie','doughnut','polarArea'].includes(c.type);
+
+                c.chartInstance = new Chart(canvas, {
+                    type: c.type,
+                    data: chartData,
+                    options: {
+                        responsive: true, maintainAspectRatio: true,
+                        animation: { duration: 400 },
+                        plugins: {
+                            legend: {
+                                display: chartData.datasets.length > 1 || isPie,
+                                position: isPie ? 'right' : 'top',
+                                labels: { color: '#8b90a5', font: { size: 10, family: 'Inter' }, boxWidth: 12, padding: 8 }
+                            },
+                            title: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1e2130', titleColor: '#e8eaf0', bodyColor: '#8b90a5',
+                                borderColor: '#2a2e42', borderWidth: 1, padding: 10,
+                                titleFont: { family: 'Inter', size: 11 },
+                                bodyFont: { family: 'Inter', size: 11 },
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const v = ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.parsed;
+                                        return ` ${ctx.dataset.label || ctx.label}: ${typeof v === 'number' ? fmtBRL(v) : v}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: isPie || c.type === 'radar' ? {} : {
+                            x: {
+                                ticks: { color: '#5c6078', font: { size: 10, family: 'Inter' }, maxRotation: 45 },
+                                grid: { color: 'rgba(42,46,66,0.4)' }
+                            },
+                            y: {
+                                ticks: { color: '#5c6078', font: { size: 10, family: 'Inter' }, callback: v => fmtBRL(v) },
+                                grid: { color: 'rgba(42,46,66,0.4)' }
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    function createEmptyState() {
+        const div = document.createElement('div');
+        div.className = 'chart-empty-state';
+        div.id = 'chartsEmpty';
+        div.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="1" y="1" width="22" height="22" rx="3"/></svg><p>Nenhum gráfico criado. Clique em <strong>Novo Gráfico</strong> para começar.</p>';
+        return div;
+    }
+
+    // Show charts container when data is loaded
+    function showChartsContainer() {
+        document.getElementById('chartsContainer').classList.add('visible');
+        userCharts = loadUserCharts();
+        // Seed default CEO/CFO charts on first visit
+        if (!userCharts.length) {
+            userCharts = getDefaultCharts();
+            saveUserCharts();
+        }
+        renderAllCharts();
+    }
+
+    // ======================================================================
+    // Default CEO/CFO Charts
+    // ======================================================================
+    function getDefaultCharts() {
+        return [
+            {
+                id: 'default_receita_vs_custos',
+                title: 'Receita vs Custos (P × R)',
+                type: 'bar', xDim: 'tipo', valField: 'both', agg: 'sum', width: 'full',
+                tipos: ['RECEITA BRUTA', 'CSP', 'GASTO ADM', 'IMPOSTO'],
+                chartInstance: null
+            },
+            {
+                id: 'default_evolucao_mensal',
+                title: 'Evolução Mensal — Receita Bruta',
+                type: 'line', xDim: 'competencia', valField: 'both', agg: 'sum', width: 'half',
+                tipos: ['RECEITA BRUTA'],
+                chartInstance: null
+            },
+            {
+                id: 'default_margem_ebtida_lucro',
+                title: 'Margem / EBTIDA / Lucro',
+                type: 'bar', xDim: 'tipo', valField: 'valor_realizado', agg: 'sum', width: 'half',
+                tipos: ['MARGEM BRUTA', 'EBTIDA', 'LUCRO LÍQUIDO', 'LUCRO LÍQUIDO FINAL'],
+                chartInstance: null
+            },
+            {
+                id: 'default_composicao_custos',
+                title: 'Composição de Custos',
+                type: 'doughnut', xDim: 'tipo', valField: 'valor_realizado', agg: 'sum', width: 'half',
+                tipos: ['CSP', 'CUSTO FIXO', 'CUSTO VARIAVEL', 'DESPESA FIXA', 'DESPESA VARIAVEL', 'ENDIVIDAMENTO', 'INVESTIMENTO'],
+                chartInstance: null
+            },
+            {
+                id: 'default_resultado_empresa',
+                title: 'Resultado por Empresa',
+                type: 'bar', xDim: 'empresa', valField: 'both', agg: 'sum', width: 'half',
+                tipos: ['LUCRO LÍQUIDO FINAL'],
+                chartInstance: null
+            },
+            {
+                id: 'default_receita_empresa',
+                title: 'Receita por Empresa',
+                type: 'doughnut', xDim: 'empresa', valField: 'valor_realizado', agg: 'sum', width: 'half',
+                tipos: ['RECEITA BRUTA'],
+                chartInstance: null
+            },
+        ];
+    }
+
+    // ======================================================================
+    // DRE CSV Export
+    // ======================================================================
+    function exportDreCSV() {
+        const filtered = getFilteredData();
+        if (!filtered.length) return;
+
+        // Build same pivot as renderTable
+        const pivot = {};
+        filtered.forEach(row => {
+            const key = `${row.ordem}|${row.agrupador}|${row.tipo}|${row.subtipo}`;
+            if (!pivot[key]) {
+                pivot[key] = {
+                    ordem: row.ordem, agrupador: row.agrupador, tipo: row.tipo,
+                    subtipo: row.subtipo, indicador: row.indicador || 0,
+                    emp_prev: {}, emp_real: {},
+                    total_prev: 0, total_real: 0,
+                };
+            }
+            const vp = row.valor_previsto || 0;
+            const vr = row.valor_realizado || 0;
+            const empKey = String(row.CODEMP);
+            pivot[key].emp_prev[empKey] = (pivot[key].emp_prev[empKey] || 0) + vp;
+            pivot[key].emp_real[empKey] = (pivot[key].emp_real[empKey] || 0) + vr;
+            pivot[key].total_prev += vp;
+            pivot[key].total_real += vr;
+        });
+
+        const rows = Object.values(pivot).sort((a, b) => {
+            if (a.ordem !== b.ordem) return a.ordem - b.ordem;
+            if (a.agrupador !== b.agrupador) return a.agrupador === 'S' ? -1 : 1;
+            return (a.subtipo || '').localeCompare(b.subtipo || '', 'pt-BR');
+        });
+
+        // Build header
+        const headers = ['Tipo', 'Agrupador', 'DRE', 'Indicador %', 'Previsto Total', 'Realizado Total'];
+        empresas.forEach(emp => {
+            headers.push(`${emp.name} (P)`, `${emp.name} (R)`);
+        });
+
+        // Build CSV
+        const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
+        let csv = headers.map(esc).join(';') + '\n';
+
+        rows.forEach(row => {
+            const isSec = row.agrupador === 'S';
+            const name = isSec ? row.tipo : row.subtipo;
+            const line = [
+                row.tipo,
+                row.agrupador,
+                name,
+                isSec ? (row.indicador * 100).toFixed(2) + '%' : '',
+                row.total_prev.toFixed(2),
+                row.total_real.toFixed(2),
+            ];
+            empresas.forEach(emp => {
+                line.push((row.emp_prev[emp.id] || 0).toFixed(2));
+                line.push((row.emp_real[emp.id] || 0).toFixed(2));
+            });
+            csv += line.map(esc).join(';') + '\n';
+        });
+
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const comps = calSelectedComps.size > 0
+            ? [...calSelectedComps].sort().join('_')
+            : 'todas';
+        a.download = `dre_gerencial_${comps}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    // ======================================================================
+    // Value Origin / Calculation Transparency
+    // ======================================================================
+    const CALC_FORMULAS = {
+        'RECEITA BRUTA': {
+            formula: 'Σ movimentações',
+            desc: 'Soma dos desdobramentos financeiros (VLRDESDOB) e baixas (VLRBAIXA) onde <code>RECDESP = 1</code> e (<code>CODGRUPONAT = 100100</code> ou <code>CODNAT = 1080000</code>).',
+            source: 'Bronze → Silver (join com naturezas/centros de custo) → Gold',
+            tag: 'source',
+        },
+        'IMPOSTO': {
+            formula: 'Σ (VLRDESDOB × AD_ALIQIMPDRE / 100)',
+            desc: 'Calcula alíquota de imposto sobre receita. <strong>Regras especiais:</strong><br>• EMPs 1, 3 (IGEP, CEPHERCE): imposto = 0 (hardcoded)<br>• EMP 2 (P_GESTAO): imposto = 0 para subtipo "ADMINISTRATIVO GERAL" e subtipos com receita de EMPs 1/3<br>• Realizado sempre = 0 (conforme SQL original)',
+            source: 'Bronze → Silver → Gold (_calc_imposto)',
+            tag: 'source',
+        },
+        'RECEITA LÍQUIDA': {
+            formula: 'RECEITA BRUTA <span class="op">−</span> |IMPOSTO|',
+            desc: 'Receita Bruta menos o valor absoluto dos impostos, calculado por subtipo/empresa/competência. Como o realizado do imposto é sempre 0, o realizado da RL = realizado da receita bruta.',
+            source: 'Gold (_calc_receita_liquida)',
+            tag: 'calc',
+        },
+        'CSP': {
+            formula: 'Σ movimentações',
+            desc: 'Custo do Serviço Prestado. Onde <code>RECDESP = -1</code> e <code>CODNAT começa com "3"</code>.',
+            source: 'Bronze → Silver → Gold (_calc_csp)',
+            tag: 'source',
+        },
+        'MARGEM BRUTA': {
+            formula: 'RECEITA LÍQUIDA <span class="op">−</span> CSP',
+            desc: 'Também chamada de <strong>Margem de Contribuição</strong>. Receita Líquida menos os custos diretos do serviço prestado, por subtipo.',
+            source: 'Gold (_calc_margem_bruta)',
+            tag: 'calc',
+        },
+        'CUSTO FIXO': {
+            formula: 'Σ movimentações',
+            desc: 'Onde <code>RECDESP = -1</code>, <code>CODGRUPONAT = 300100</code>, excluindo CODNATs que começam com 3/5/6/7 e DESCRNAT começando com "MUN".',
+            source: 'Bronze → Silver → Gold (_calc_custos_despesas)',
+            tag: 'source',
+        },
+        'CUSTO VARIAVEL': {
+            formula: 'Σ movimentações',
+            desc: 'Onde <code>RECDESP = -1</code>, <code>CODGRUPONAT = 300200</code>, mesmas exclusões de CODNAT.',
+            source: 'Bronze → Silver → Gold (_calc_custos_despesas)',
+            tag: 'source',
+        },
+        'DESPESA FIXA': {
+            formula: 'Σ movimentações',
+            desc: 'Onde <code>RECDESP = -1</code>, <code>CODGRUPONAT = 200100</code>, mesmas exclusões de CODNAT.',
+            source: 'Bronze → Silver → Gold (_calc_custos_despesas)',
+            tag: 'source',
+        },
+        'DESPESA VARIAVEL': {
+            formula: 'Σ movimentações',
+            desc: 'Onde <code>RECDESP = -1</code>, <code>CODGRUPONAT = 200200</code>, mesmas exclusões de CODNAT.',
+            source: 'Bronze → Silver → Gold (_calc_custos_despesas)',
+            tag: 'source',
+        },
+        'GASTO ADM': {
+            formula: 'CUSTO FIXO <span class="op">+</span> CUSTO VARIAVEL <span class="op">+</span> DESPESA FIXA <span class="op">+</span> DESPESA VARIAVEL',
+            desc: 'Soma de todos os custos e despesas administrativas (fixas + variáveis).',
+            source: 'Gold (_calc_gastos_adm)',
+            tag: 'calc',
+        },
+        'EBTIDA': {
+            formula: 'MARGEM BRUTA <span class="op">−</span> GASTO ADM',
+            desc: 'Lucro antes de juros, impostos, depreciação e amortização. Indica a capacidade operacional da empresa de gerar caixa.',
+            source: 'Gold (_calc_ebtida)',
+            tag: 'calc',
+        },
+        'ENDIVIDAMENTO': {
+            formula: 'Σ movimentações',
+            desc: 'Juros, tarifas e empréstimos. Onde <code>RECDESP = -1</code> e <code>CODNAT começa com "5"</code>.',
+            source: 'Bronze → Silver → Gold (_calc_endividamento)',
+            tag: 'source',
+        },
+        'INVESTIMENTO': {
+            formula: 'Σ movimentações',
+            desc: 'Imóveis, veículos, reformas. Onde <code>RECDESP = -1</code> e <code>CODNAT começa com "60"</code>.',
+            source: 'Bronze → Silver → Gold (_calc_investimento)',
+            tag: 'source',
+        },
+        'LUCRO LÍQUIDO': {
+            formula: 'EBTIDA <span class="op">−</span> ENDIVIDAMENTO <span class="op">−</span> INVESTIMENTO',
+            desc: 'Resultado líquido da operação após descontar endividamento e investimentos.',
+            source: 'Gold (_calc_lucro_liquido)',
+            tag: 'calc',
+        },
+        'DISTRIBUIÇÕES DE LUCROS': {
+            formula: 'Σ movimentações',
+            desc: 'Distribuição de lucros aos sócios. Onde <code>RECDESP = -1</code> e <code>CODNAT começa com "7"</code>. Valores são multiplicados por -1.',
+            source: 'Bronze → Silver → Gold (_calc_distribuicoes)',
+            tag: 'source',
+        },
+        'LUCRO LÍQUIDO FINAL': {
+            formula: 'LUCRO LÍQUIDO <span class="op">−</span> DISTRIBUIÇÕES DE LUCROS',
+            desc: 'Resultado final após todas as distribuições. Indicador principal para o acionista.',
+            source: 'Gold (_calc_lucro_liquido_final)',
+            tag: 'calc',
+        },
+    };
+
+    function openOriginModal(tipo, agrupador, totalPrev, totalReal, indicador) {
+        const overlay = document.getElementById('originOverlay');
+        const title = document.getElementById('originTitle');
+        const body = document.getElementById('originBody');
+
+        const displayName = TIPO_DISPLAY[tipo] || tipo;
+        const info = CALC_FORMULAS[tipo];
+        const isCalc = CALCULATED_TYPES.has(tipo);
+        const tagType = info ? info.tag : (isCalc ? 'calc' : 'source');
+        const tagLabel = tagType === 'calc' ? 'Calculado' : 'Fonte de Dados';
+
+        title.innerHTML = `<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/></svg> ${displayName}`;
+
+        let html = '';
+
+        // Tag + type
+        html += `<div class="origin-section"><span class="origin-tag ${tagType}">${tagLabel}</span> <span class="origin-tag section">${agrupador === 'S' ? 'Totalizador' : 'Detalhe'}</span></div>`;
+
+        // Values
+        html += `<div class="origin-section"><div class="origin-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Valores Atuais</div>`;
+        html += `<div class="origin-values-grid">
+            <div class="origin-val-card"><div class="origin-val-label">Previsto</div><div class="origin-val-num ${valClass(totalPrev)}">${fmtBRL(totalPrev)}</div></div>
+            <div class="origin-val-card"><div class="origin-val-label">Realizado</div><div class="origin-val-num ${valClass(totalReal)}">${fmtBRL(totalReal)}</div></div>
+        </div></div>`;
+
+        // Indicator
+        if (agrupador === 'S' && indicador != null) {
+            html += `<div class="origin-section"><div class="origin-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Análise Vertical (AV%)</div>`;
+            html += `<div class="origin-desc">Este tipo representa <strong>${(indicador * 100).toFixed(2)}%</strong> da ${tipo === 'IMPOSTO' ? 'Receita Bruta' : 'Receita Líquida'} (conforme vw_dre_gerencial.sql).</div></div>`;
+        }
+
+        // Formula
+        if (info) {
+            html += `<div class="origin-section"><div class="origin-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M9 9h6M9 12h6M9 15h3"/></svg> Fórmula de Cálculo</div>`;
+            html += `<div class="origin-formula">${info.formula}</div></div>`;
+
+            html += `<div class="origin-section"><div class="origin-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> Descrição</div>`;
+            html += `<div class="origin-desc">${info.desc}</div></div>`;
+
+            html += `<div class="origin-section"><div class="origin-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Pipeline de Dados</div>`;
+            html += `<div class="origin-desc"><code>${info.source}</code></div></div>`;
+        }
+
+        // Show detail rows (pagamentos) breakdown for this tipo
+        const filtered = getFilteredData();
+        const detailRows = filtered.filter(r => r.tipo === tipo && r.agrupador === 'N');
+        if (detailRows.length > 0) {
+            // Group by subtipo
+            const subs = {};
+            detailRows.forEach(r => {
+                const st = r.subtipo || '(vazio)';
+                if (!subs[st]) subs[st] = { prev: 0, real: 0, count: 0, pags: [] };
+                subs[st].prev += (r.valor_previsto || 0);
+                subs[st].real += (r.valor_realizado || 0);
+                subs[st].count += 1;
+                if (r.pagamentos) subs[st].pags.push(...r.pagamentos);
+            });
+            const subEntries = Object.entries(subs).sort((a, b) => Math.abs(b[1].real) - Math.abs(a[1].real));
+
+            html += `<div class="origin-section"><div class="origin-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Subtipos Detalhados (${subEntries.length})</div>`;
+            html += `<table class="origin-detail-table"><thead><tr><th>Subtipo</th><th style="text-align:right">Previsto</th><th style="text-align:right">Realizado</th><th style="text-align:right">Pag.</th></tr></thead><tbody>`;
+            subEntries.forEach(([st, data]) => {
+                html += `<tr><td>${st}</td><td style="text-align:right;${data.prev < 0 ? 'color:#ef4444' : ''}">${fmtBRL(data.prev)}</td><td style="text-align:right;${data.real < 0 ? 'color:#ef4444' : ''}">${fmtBRL(data.real)}</td><td style="text-align:right">${data.pags.length || '—'}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+        }
+
+        body.innerHTML = html;
+        overlay.classList.add('open');
+    }
+
+    function closeOriginModal() {
+        document.getElementById('originOverlay').classList.remove('open');
+    }
+
+    // ======================================================================
+    // Chat — LLM Providers
+    // ======================================================================
+    const LLM_PROVIDERS = {
+        groq: {
+            name: 'Groq',
+            label: 'Gratuito',
+            free: true,
+            baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
+            models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it', 'mixtral-8x7b-32768'],
+            defaultModel: 'llama-3.3-70b-versatile',
+            format: 'openai',
+            keyHint: 'Obtenha grátis em <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a>',
+        },
+        gemini: {
+            name: 'Google Gemini',
+            label: 'Gratuito',
+            free: true,
+            baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+            models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+            defaultModel: 'gemini-2.5-flash',
+            format: 'gemini',
+            keyHint: 'Obtenha grátis em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a>',
+        },
+        openrouter: {
+            name: 'OpenRouter',
+            label: 'Gratuito',
+            free: true,
+            baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+            models: ['google/gemini-2.0-flash-exp:free', 'meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'deepseek/deepseek-chat-v3-0324:free'],
+            defaultModel: 'google/gemini-2.0-flash-exp:free',
+            format: 'openai',
+            keyHint: 'Obtenha grátis em <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a>',
+        },
+        anthropic: {
+            name: 'Anthropic Claude',
+            label: 'Pago',
+            free: false,
+            baseUrl: 'https://api.anthropic.com/v1/messages',
+            models: ['claude-sonnet-4-20250514', 'claude-3-5-haiku-20241022'],
+            defaultModel: 'claude-sonnet-4-20250514',
+            format: 'anthropic',
+            keyHint: 'Obtenha em <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>',
+        },
+        openai: {
+            name: 'OpenAI',
+            label: 'Pago',
+            free: false,
+            baseUrl: 'https://api.openai.com/v1/chat/completions',
+            models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+            defaultModel: 'gpt-4o-mini',
+            format: 'openai',
+            keyHint: 'Obtenha em <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>',
+        },
+        manus: {
+            name: 'Manus AI',
+            label: 'Pago (agente)',
+            free: false,
+            baseUrl: 'https://api.manus.ai',
+            models: ['manus-1.6-lite', 'manus-1.6', 'manus-1.6-max'],
+            defaultModel: 'manus-1.6-lite',
+            format: 'manus',
+            keyHint: 'Obtenha em <a href="https://manus.im/app?show_settings=integrations&app_name=api" target="_blank">manus.im</a> (Settings → Integrations → API)',
+        },
+    };
+
+    // Chat state
+    let chatHistory = []; // [{role, content}]
+    let chatConfig = loadChatConfig();
+    let chatStreaming = false;
+
+    function loadChatConfig() {
+        try {
+            const s = localStorage.getItem('dre_chat_config');
+            if (s) return JSON.parse(s);
+        } catch (e) { /* ignore */ }
+        return { provider: 'groq', model: 'llama-3.3-70b-versatile', apiKey: '', baseUrl: '' };
+    }
+    function saveChatConfig() {
+        try { localStorage.setItem('dre_chat_config', JSON.stringify(chatConfig)); } catch(e) {}
+    }
+
+    // ======================================================================
+    // Chat — Panel toggle
+    // ======================================================================
+    function chatTogglePanel() {
+        const panel = document.getElementById('chatPanel');
+        const fab = document.getElementById('chatFab');
+        const isOpen = panel.classList.toggle('open');
+        fab.classList.toggle('active', isOpen);
+        if (isOpen) {
+            chatUpdateModelBadge();
+            document.getElementById('chatInput').focus();
+        }
+    }
+
+    function chatUpdateModelBadge() {
+        const prov = LLM_PROVIDERS[chatConfig.provider];
+        const short = chatConfig.model.split('/').pop().split(':')[0];
+        document.getElementById('chatModelBadge').textContent = prov ? `${prov.name} · ${short}` : '—';
+    }
+
+    // ======================================================================
+    // Chat — Settings
+    // ======================================================================
+    let _chatSettingsProvider = 'groq';
+
+    function chatOpenSettings() {
+        _chatSettingsProvider = chatConfig.provider;
+        chatRenderProviderGrid();
+        chatRenderModelSelect();
+        document.getElementById('chatApiKeyInput').value = chatConfig.apiKey;
+        document.getElementById('chatBaseUrlInput').value = chatConfig.baseUrl || '';
+        document.getElementById('chatSettingsOverlay').classList.add('open');
+    }
+    function chatCloseSettings() {
+        document.getElementById('chatSettingsOverlay').classList.remove('open');
+    }
+
+    function chatRenderProviderGrid() {
+        const grid = document.getElementById('chatProviderGrid');
+        grid.innerHTML = Object.entries(LLM_PROVIDERS).map(([id, p]) => {
+            const sel = id === _chatSettingsProvider ? ' selected' : '';
+            const badge = p.free
+                ? '<span class="chat-prov-badge free">GRÁTIS</span>'
+                : '<span class="chat-prov-badge paid">PAGO</span>';
+            return `<div class="chat-prov-card${sel}" onclick="chatSelectProvider('${id}')">
+                <span class="chat-prov-name">${p.name}</span>${badge}
+            </div>`;
+        }).join('');
+    }
+
+    function chatSelectProvider(id) {
+        _chatSettingsProvider = id;
+        chatRenderProviderGrid();
+        chatRenderModelSelect();
+        const prov = LLM_PROVIDERS[id];
+        document.getElementById('chatApiKeyHint').innerHTML = prov.keyHint;
+        document.getElementById('chatBaseUrlInput').value = '';
+    }
+
+    function chatRenderModelSelect() {
+        const prov = LLM_PROVIDERS[_chatSettingsProvider];
+        const sel = document.getElementById('chatModelSelect');
+        sel.innerHTML = prov.models.map(m => {
+            const isDefault = m === prov.defaultModel;
+            const label = m + (isDefault ? ' (recomendado)' : '');
+            return `<option value="${m}">${label}</option>`;
+        }).join('');
+        sel.value = prov.defaultModel;
+        document.getElementById('chatApiKeyHint').innerHTML = prov.keyHint;
+    }
+
+    function chatSaveSettings() {
+        chatConfig.provider = _chatSettingsProvider;
+        chatConfig.model = document.getElementById('chatModelSelect').value;
+        chatConfig.apiKey = document.getElementById('chatApiKeyInput').value.trim();
+        chatConfig.baseUrl = document.getElementById('chatBaseUrlInput').value.trim();
+        saveChatConfig();
+        chatUpdateModelBadge();
+        chatCloseSettings();
+        chatAddSystemMsg('Configurações salvas: ' + LLM_PROVIDERS[chatConfig.provider].name + ' · ' + chatConfig.model.split('/').pop().split(':')[0]);
+    }
+
+    function chatSettingsPreview() { /* placeholder for future use */ }
+
+    // ======================================================================
+    // Chat — DRE Context Builder
+    // ======================================================================
+    function buildDREContext() {
+        if (!dreData.length) return 'Nenhum dado DRE carregado ainda.';
+
+        const filtered = getFilteredData();
+        const summaries = filtered.filter(r => r.agrupador === 'S');
+
+        const comps = calSelectedComps.size > 0 ? [...calSelectedComps].sort().join(', ') : 'Todas';
+        const empNames = empresas.map(e => e.name).join(', ');
+
+        let ctx = `DADOS DA DRE GERENCIAL (Dashboard Financeiro)\n`;
+        ctx += `==========================================\n`;
+        ctx += `Competências selecionadas: ${comps}\n`;
+        ctx += `Empresas: ${empNames}\n`;
+        ctx += `Total de registros: ${filtered.length}\n\n`;
+
+        // Summary by tipo
+        const tipoMap = {};
+        summaries.forEach(r => {
+            if (!tipoMap[r.tipo]) tipoMap[r.tipo] = { prev: 0, real: 0, ordem: r.ordem, ind: r.indicador };
+            tipoMap[r.tipo].prev += (r.valor_previsto || 0);
+            tipoMap[r.tipo].real += (r.valor_realizado || 0);
+        });
+
+        ctx += `RESUMO POR TIPO (R$):\n`;
+        ctx += `${'Tipo'.padEnd(30)} ${'Previsto'.padStart(18)} ${'Realizado'.padStart(18)} ${'AV%'.padStart(8)}\n`;
+        ctx += '-'.repeat(76) + '\n';
+        Object.entries(tipoMap)
+            .sort((a, b) => a[1].ordem - b[1].ordem)
+            .forEach(([tipo, v]) => {
+                const pct = v.ind ? (v.ind * 100).toFixed(1) + '%' : '';
+                ctx += `${tipo.padEnd(30)} ${v.prev.toFixed(2).padStart(18)} ${v.real.toFixed(2).padStart(18)} ${pct.padStart(8)}\n`;
+            });
+
+        // Per-empresa breakdown for key types
+        ctx += `\nDETALHAMENTO POR EMPRESA (Realizado):\n`;
+        const keyTypes = ['RECEITA BRUTA', 'CSP', 'MARGEM BRUTA', 'EBTIDA', 'LUCRO LÍQUIDO FINAL'];
+        keyTypes.forEach(tipo => {
+            const rows = filtered.filter(r => r.tipo === tipo && r.agrupador === 'S');
+            if (!rows.length) return;
+            ctx += `\n  ${tipo}:\n`;
+            const empTotals = {};
+            rows.forEach(r => {
+                const nm = r.NOMEFANTASIA || `EMP ${r.CODEMP}`;
+                empTotals[nm] = (empTotals[nm] || 0) + (r.valor_realizado || 0);
+            });
+            Object.entries(empTotals)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([nm, v]) => {
+                    ctx += `    ${nm}: R$ ${v.toFixed(2)}\n`;
+                });
+        });
+
+        // Detail subtype breakdown (top N for context)
+        ctx += `\nDETALHES POR SUBTIPO (Top 15 por valor realizado):\n`;
+        const details = filtered.filter(r => r.agrupador === 'N');
+        const subMap = {};
+        details.forEach(r => {
+            const key = `${r.tipo} > ${r.subtipo}`;
+            if (!subMap[key]) subMap[key] = { prev: 0, real: 0 };
+            subMap[key].prev += (r.valor_previsto || 0);
+            subMap[key].real += (r.valor_realizado || 0);
+        });
+        Object.entries(subMap)
+            .sort((a, b) => Math.abs(b[1].real) - Math.abs(a[1].real))
+            .slice(0, 15)
+            .forEach(([sub, v]) => {
+                ctx += `  ${sub}: P=${v.prev.toFixed(2)} | R=${v.real.toFixed(2)}\n`;
+            });
+
+        ctx += `\nFÓRMULAS DO DRE:\n`;
+        ctx += `  RECEITA LÍQUIDA = RECEITA BRUTA - |IMPOSTO|\n`;
+        ctx += `  MARGEM BRUTA = RECEITA LÍQUIDA - CSP\n`;
+        ctx += `  GASTO ADM = CUSTO FIXO + CUSTO VARIAVEL + DESPESA FIXA + DESPESA VARIAVEL\n`;
+        ctx += `  EBTIDA = MARGEM BRUTA - GASTO ADM\n`;
+        ctx += `  LUCRO LÍQUIDO = EBTIDA - ENDIVIDAMENTO - INVESTIMENTO\n`;
+        ctx += `  LUCRO LÍQUIDO FINAL = LUCRO LÍQUIDO - DISTRIBUIÇÕES DE LUCROS\n`;
+
+        return ctx;
+    }
+
+    // ======================================================================
+    // Chat — Markdown renderer (simple)
+    // ======================================================================
+    function chatMd(text) {
+        // Escape HTML
+        let s = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Code blocks
+        s = s.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${code.trim()}</code></pre>`);
+        // Inline code
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Bold
+        s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // Italic
+        s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        // Headers
+        s = s.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+        s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+        s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        // Unordered lists
+        s = s.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+        s = s.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+        // Remove duplicate nested ul
+        s = s.replace(/<\/ul>\s*<ul>/g, '');
+        // Ordered lists
+        s = s.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+        // Line breaks (but not inside pre/code)
+        s = s.replace(/(?<!<\/(pre|code|li|ul|ol|h[1-4])>)\n/g, '<br>');
+        return s;
+    }
+
+    // ======================================================================
+    // Chat — Message rendering
+    // ======================================================================
+    function chatAddMsg(role, content) {
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.className = `chat-msg ${role}`;
+        if (role === 'assistant') {
+            div.innerHTML = chatMd(content);
+        } else {
+            div.textContent = content;
+        }
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        return div;
+    }
+
+    function chatAddSystemMsg(text) {
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.className = 'chat-msg system';
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function chatShowTyping() {
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.className = 'chat-msg assistant';
+        div.id = 'chatTypingIndicator';
+        div.innerHTML = '<div class="chat-typing"><span></span><span></span><span></span></div>';
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        return div;
+    }
+
+    function chatRemoveTyping() {
+        const el = document.getElementById('chatTypingIndicator');
+        if (el) el.remove();
+    }
+
+    function chatClearHistory() {
+        chatHistory = [];
+        const container = document.getElementById('chatMessages');
+        container.innerHTML = '<div class="chat-msg system">Conversa limpa. Os dados da DRE continuam disponíveis como contexto.</div>';
+    }
+
+    // ======================================================================
+    // Chat — Input handling
+    // ======================================================================
+    function chatInputKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatSend();
+        }
+        // Auto-resize textarea
+        const ta = e.target;
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 80) + 'px';
+    }
+
+    async function chatSend() {
+        if (chatStreaming) return;
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        if (!chatConfig.apiKey) {
+            chatAddSystemMsg('Configure uma API Key em ⚙ antes de enviar mensagens.');
+            chatOpenSettings();
+            return;
+        }
+
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Add user message
+        chatAddMsg('user', text);
+        chatHistory.push({ role: 'user', content: text });
+
+        // Build system prompt with DRE context
+        const systemPrompt = `Você é um assistente financeiro especializado em análise de DRE (Demonstrativo do Resultado do Exercício). Responda em português brasileiro de forma clara e profissional. Use os dados carregados para embasar suas respostas. Quando apresentar valores, formate em R$ (reais). Seja direto e objetivo.\n\n${buildDREContext()}`;
+
+        // Show typing
+        const typingDiv = chatShowTyping();
+        chatStreaming = true;
+        document.getElementById('chatSendBtn').disabled = true;
+
+        try {
+            const provider = LLM_PROVIDERS[chatConfig.provider];
+            const format = provider.format;
+            const baseUrl = chatConfig.baseUrl || provider.baseUrl;
+
+            if (format === 'openai') {
+                await chatCallOpenAI(baseUrl, systemPrompt, typingDiv);
+            } else if (format === 'gemini') {
+                await chatCallGemini(baseUrl, systemPrompt, typingDiv);
+            } else if (format === 'anthropic') {
+                await chatCallAnthropic(baseUrl, systemPrompt, typingDiv);
+            } else if (format === 'manus') {
+                await chatCallManus(baseUrl, systemPrompt, typingDiv);
+            }
+        } catch (err) {
+            chatRemoveTyping();
+            chatAddSystemMsg(`Erro: ${err.message}`);
+            console.error('[Chat] Error:', err);
+        } finally {
+            chatStreaming = false;
+            document.getElementById('chatSendBtn').disabled = false;
+        }
+    }
+
+    // ======================================================================
+    // Chat — OpenAI-compatible (Groq, OpenAI, OpenRouter)
+    // ======================================================================
+    async function chatCallOpenAI(baseUrl, systemPrompt, typingDiv) {
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory
+        ];
+
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        // Add auth header only if API key is present
+        if (chatConfig.apiKey) {
+            headers['Authorization'] = `Bearer ${chatConfig.apiKey}`;
+        }
+        // OpenRouter needs extra headers
+        if (chatConfig.provider === 'openrouter') {
+            headers['HTTP-Referer'] = window.location.href;
+            headers['X-Title'] = 'DRE Gerencial Chat';
+        }
+
+        const resp = await fetch(baseUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                model: chatConfig.model,
+                messages,
+                stream: true,
+                max_tokens: 4096,
+            }),
+        });
+
+        if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP ${resp.status}`);
+        }
+
+        // Stream SSE
+        chatRemoveTyping();
+        const msgDiv = chatAddMsg('assistant', '');
+        let fullContent = '';
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // keep incomplete line
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') break;
+                try {
+                    const json = JSON.parse(data);
+                    const delta = json.choices?.[0]?.delta?.content;
+                    if (delta) {
+                        fullContent += delta;
+                        msgDiv.innerHTML = chatMd(fullContent);
+                        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                    }
+                } catch (e) { /* skip malformed chunks */ }
+            }
+        }
+
+        chatHistory.push({ role: 'assistant', content: fullContent });
+    }
+
+    // ======================================================================
+    // Chat — Google Gemini
+    // ======================================================================
+    async function chatCallGemini(baseUrl, systemPrompt, typingDiv) {
+        const contents = chatHistory.map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+        }));
+
+        const url = `${baseUrl}/models/${chatConfig.model}:streamGenerateContent?alt=sse&key=${chatConfig.apiKey}`;
+
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents,
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { maxOutputTokens: 4096 },
+            }),
+        });
+
+        if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP ${resp.status}`);
+        }
+
+        chatRemoveTyping();
+        const msgDiv = chatAddMsg('assistant', '');
+        let fullContent = '';
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6).trim();
+                try {
+                    const json = JSON.parse(data);
+                    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        fullContent += text;
+                        msgDiv.innerHTML = chatMd(fullContent);
+                        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                    }
+                } catch (e) { /* skip */ }
+            }
+        }
+
+        chatHistory.push({ role: 'assistant', content: fullContent });
+    }
+
+    // ======================================================================
+    // Chat — Anthropic Claude
+    // ======================================================================
+    async function chatCallAnthropic(baseUrl, systemPrompt, typingDiv) {
+        const messages = chatHistory.map(m => ({ role: m.role, content: m.content }));
+
+        const resp = await fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': chatConfig.apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+            },
+            body: JSON.stringify({
+                model: chatConfig.model,
+                max_tokens: 4096,
+                system: systemPrompt,
+                messages,
+                stream: true,
+            }),
+        });
+
+        if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `HTTP ${resp.status}`);
+        }
+
+        chatRemoveTyping();
+        const msgDiv = chatAddMsg('assistant', '');
+        let fullContent = '';
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6).trim();
+                try {
+                    const json = JSON.parse(data);
+                    if (json.type === 'content_block_delta' && json.delta?.text) {
+                        fullContent += json.delta.text;
+                        msgDiv.innerHTML = chatMd(fullContent);
+                        document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                    }
+                } catch (e) { /* skip */ }
+            }
+        }
+
+        chatHistory.push({ role: 'assistant', content: fullContent });
+    }
+
+    // ======================================================================
+    // Chat — Manus AI (async task-based agent)
+    // ======================================================================
+    async function chatCallManus(baseUrl, systemPrompt, typingDiv) {
+        const userMsg = chatHistory[chatHistory.length - 1]?.content || '';
+        const fullPrompt = systemPrompt + '\n\nPergunta do usuário: ' + userMsg;
+
+        // 1. Create task
+        const createResp = await fetch(baseUrl + '/v1/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'API_KEY': chatConfig.apiKey,
+            },
+            body: JSON.stringify({
+                input: [{
+                    role: 'user',
+                    content: [{ type: 'input_text', text: fullPrompt }],
+                }],
+                task_mode: 'agent',
+                agent_profile: chatConfig.model || 'manus-1.6-lite',
+                hide_in_task_list: true,
+            }),
+        });
+
+        if (!createResp.ok) {
+            const errText = await createResp.text().catch(() => '');
+            throw new Error(errText.slice(0, 300) || `HTTP ${createResp.status}`);
+        }
+
+        const taskData = await createResp.json();
+        const taskId = taskData.id;
+        if (!taskId) throw new Error('Manus não retornou task ID');
+
+        // 2. Poll until completed (max 5 min)
+        const maxWait = 300000;
+        const pollInterval = 4000;
+        const startTime = Date.now();
+        let status = taskData.status || 'running';
+        let result = taskData;
+        let dots = 0;
+
+        while (status === 'running' || status === 'pending') {
+            if (Date.now() - startTime > maxWait) {
+                throw new Error('Timeout: Manus demorou mais de 5 minutos para responder.');
+            }
+
+            // Update typing indicator with elapsed time
+            dots = (dots + 1) % 4;
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            if (typingDiv) {
+                typingDiv.innerHTML = `<span class="typing-dots">Manus processando${'.'.repeat(dots)} (${elapsed}s)</span>`;
+            }
+
+            await new Promise(r => setTimeout(r, pollInterval));
+
+            const pollResp = await fetch(baseUrl + '/v1/tasks/' + taskId, {
+                headers: { 'API_KEY': chatConfig.apiKey },
+            });
+
+            if (!pollResp.ok) {
+                const errText = await pollResp.text().catch(() => '');
+                throw new Error(`Erro ao consultar task: ${errText.slice(0, 200) || pollResp.status}`);
+            }
+
+            result = await pollResp.json();
+            status = result.status;
+        }
+
+        chatRemoveTyping();
+
+        if (status === 'error') {
+            throw new Error('Manus retornou erro na task. Tente novamente.');
+        }
+
+        // 3. Extract response text from output
+        let content = '';
+        if (result.output && Array.isArray(result.output)) {
+            for (const msg of result.output) {
+                if (msg.role === 'assistant' && msg.content) {
+                    for (const part of (Array.isArray(msg.content) ? msg.content : [msg.content])) {
+                        if (typeof part === 'string') {
+                            content += part + '\n';
+                        } else if (part.text) {
+                            content += part.text + '\n';
+                        }
+                    }
+                }
+            }
+        }
+
+        content = content.trim();
+        if (!content) content = '(Manus não retornou conteúdo na resposta. Verifique a task em manus.im)';
+
+        chatAddMsg('assistant', content);
+        chatHistory.push({ role: 'assistant', content });
+    }
+
     // Enter to load
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.tagName === 'INPUT') loadDRE();
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.id !== 'chatApiKeyInput' && e.target.id !== 'chatBaseUrlInput') loadDRE();
+    });
+
+    // Auto-load on page open
+    document.addEventListener('DOMContentLoaded', () => {
+        renderColumnConfigUI();
+        renderCalGrid();
+        chatUpdateModelBadge();
+        loadDRE();
     });
     </script>
 </body>
