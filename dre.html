@@ -1194,11 +1194,11 @@
         <div class="controls">
             <div class="control-group">
                 <label>API URL</label>
-                <input type="text" id="apiUrl" value="https://api-dados.pluralmed.com.br" placeholder="http://localhost:8000">
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
             </div>
             <div class="control-group">
                 <label>API Key</label>
-                <input type="password" id="apiKey" placeholder="X-API-Key">
+                <input type="password" id="apiKey" value="dev_admin_key_12345" placeholder="X-API-Key">
             </div>
             <div class="control-group">
                 <label>Competência</label>
@@ -1891,6 +1891,13 @@
     };
 
     // ======================================================================
+    // Cálculos DRE — linhas calculadas derivadas das linhas base
+    // Ref: ref/calculos/dre_*.md
+    // ======================================================================
+    // NOTA: cálculos agora são feitos no backend (gold_tabela.py).
+    // A função computeCalculatedRows foi removida — o frontend apenas exibe.
+
+    // ======================================================================
     // Multi-select component
     // ======================================================================
     let msSelected = { empresa: new Set(), municipio: new Set() };
@@ -1986,43 +1993,85 @@
     // Filters (Empresa & Município)
     // ======================================================================
 
-    function populateFilters() {
-        // 1) Build empresa map from dreData
-        const empMap = new Map();
-        dreData.forEach(r => {
-            const id = String(r.CODEMP);
-            if (!empMap.has(id)) {
-                empMap.set(id, {
-                    id: id,
-                    name: r.NOMEFANTASIA || `EMP ${r.CODEMP}`,
-                    municipios: new Set()
-                });
-            }
+    // Build subtipo → [matching municipalities] lookup for municipality filter
+    // Handles cases like "JIJOCA DE JERICOACOARA" → ["JIJOCA"],
+    //                     "MARCO - APS" → ["MARCO"],
+    //                     "TIANGUA - APS" → ["TIANGUA APS"], etc.
+    function buildSubtipoMunLookup(rows) {
+        subtipoMunLookup = {};
+        const seen = new Set();
+        const norm = s => s.toUpperCase().replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ').trim();
+
+        // Collect all unique N-row subtipos to map
+        const names = [];
+        rows.forEach(r => {
+            if (r.agrupador !== 'N') return;
+            const sub = String(r.subtipo || '').trim();
+            if (sub) names.push(sub);
         });
 
-        // 2) Extract municípios from subtipo of RECEITA BRUTA detail rows
-        dreData.forEach(r => {
-            if (r.tipo === 'RECEITA BRUTA' && r.agrupador === 'N' && r.subtipo) {
-                const mun = String(r.subtipo).trim();
-                if (mun) {
-                    const id = String(r.CODEMP);
-                    const emp = empMap.get(id);
-                    if (emp) emp.municipios.add(mun);
+        names.forEach(sub => {
+            if (!sub || seen.has(sub)) return;
+            seen.add(sub);
+
+            // Exact match — is a known municipality
+            if (allMunicipios.includes(sub)) {
+                subtipoMunLookup[sub] = [sub];
+                return;
+            }
+
+            const subNorm = norm(sub);
+            let matches = [];
+
+            // Strategy 1: longest canonical municipality that is a prefix (normalized)
+            const munsSorted = [...allMunicipios].sort((a, b) => b.length - a.length);
+            for (const mun of munsSorted) {
+                const munNorm = norm(mun);
+                if (subNorm === munNorm || subNorm.startsWith(munNorm + ' ')) {
+                    matches.push(mun);
                 }
             }
+
+            // Strategy 2: same base city (first word >= 3 chars)
+            if (matches.length === 0) {
+                const subBase = subNorm.split(' ')[0];
+                if (subBase.length >= 3) {
+                    for (const mun of munsSorted) {
+                        const munBase = norm(mun).split(' ')[0];
+                        if (subBase === munBase) matches.push(mun);
+                    }
+                }
+            }
+
+            // null = not municipality-related (expense category, etc.)
+            subtipoMunLookup[sub] = matches.length > 0 ? matches : null;
         });
+        console.log('[DRE] subtipoMunLookup built:', Object.keys(subtipoMunLookup).length, 'entries');
+    }
 
-        // Convert Sets to arrays
-        allEmpresas = Array.from(empMap.values())
-            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-        allEmpresas.forEach(e => e.municipios = [...e.municipios].sort());
+    function populateFilters() {
+        // Usa empresas e mapeamento município→empresa da resposta da API
+        // Inverte municipio_empresa_map para empresa→municipios
+        const empMunMap = {};
+        for (const [mun, empIds] of Object.entries(tabelaMunEmpMap)) {
+            empIds.forEach(id => {
+                if (!empMunMap[id]) empMunMap[id] = [];
+                empMunMap[id].push(mun);
+            });
+        }
 
-        // 3) Compute unique municípios
+        allEmpresas = tabelaEmpresas.map(e => ({
+            id: String(e.id),
+            name: e.name,
+            municipios: (empMunMap[String(e.id)] || []).sort()
+        })).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+        // Compute unique municípios
         const munSet = new Set();
         allEmpresas.forEach(e => e.municipios.forEach(m => munSet.add(m)));
         allMunicipios = [...munSet].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-        // 4) Populate município multi-select
+        // Populate município multi-select
         const munContainer = document.getElementById('msItemsMunicipio');
         munContainer.innerHTML = '';
         allMunicipios.forEach(m => {
@@ -2035,7 +2084,7 @@
         msSelected.municipio.clear();
         updateMultiSelectLabel('municipio');
 
-        // 5) Populate empresa multi-select
+        // Populate empresa multi-select
         msSelected.empresa.clear();
         refreshEmpresaItems();
     }
@@ -2069,51 +2118,172 @@
     }
 
     function getFilteredData() {
-        let data = dreData;
+        // 1. Aggregate pre-pivoted rows across selected competencias
+        const agg = {};
+        dreData.forEach(row => {
+            const key = `${row.ordem}|${row.agrupador}|${row.tipo}|${row.subtipo || ''}`;
+            if (!agg[key]) {
+                agg[key] = {
+                    ordem: row.ordem,
+                    agrupador: row.agrupador,
+                    tipo: row.tipo,
+                    subtipo: row.subtipo,
+                    indicador: row.indicador || 0,
+                    emp_prev: {},
+                    emp_real: {},
+                    total_prev: 0,
+                    total_real: 0,
+                    pagamentos: [],
+                };
+            }
+            agg[key].total_prev += (row.total_prev || 0);
+            agg[key].total_real += (row.total_real || 0);
+            for (const [e, v] of Object.entries(row.emp_prev || {})) {
+                agg[key].emp_prev[e] = (agg[key].emp_prev[e] || 0) + v;
+            }
+            for (const [e, v] of Object.entries(row.emp_real || {})) {
+                agg[key].emp_real[e] = (agg[key].emp_real[e] || 0) + v;
+            }
+            if (row.pagamentos && row.pagamentos.length) {
+                agg[key].pagamentos.push(...row.pagamentos);
+            }
+        });
+        let rows = Object.values(agg);
+
+        // 2. Apply filters
         const selectedMunicipios = msSelected.municipio;
         const selectedEmpresas = msSelected.empresa;
 
+        // ---------- 2a. Municipality filter ----------
         if (selectedMunicipios.size > 0) {
-            // 1. Restrict to CODEMPs of empresas that operate in selected municípios
-            const codEmps = new Set(
-                allEmpresas
-                    .filter(e => e.municipios.some(m => selectedMunicipios.has(m)))
-                    .map(e => e.id)
-            );
-            data = data.filter(r => codEmps.has(String(r.CODEMP)));
-
-            // 2. Among detail rows (N), hide municipality rows that aren't selected
-            const allMunSet = new Set(allMunicipios);
-            data = data.filter(r => {
-                if (r.agrupador !== 'N') return true; // section rows always pass
+            // Filter N rows: keep only those matching a selected municipality
+            rows = rows.filter(r => {
+                if (r.agrupador !== 'N') return true;
                 const sub = String(r.subtipo || '').trim();
-                if (allMunSet.has(sub)) {
-                    // This detail row IS a municipality row — keep only if selected
-                    return selectedMunicipios.has(sub);
-                }
-                return true; // non-municipality detail rows pass through
+                const munMatches = subtipoMunLookup[sub];
+                // null = not municipality-related (expense category) → keep
+                if (munMatches === null || munMatches === undefined) return true;
+                // Array of matching municipalities → keep if any is selected
+                return munMatches.some(m => selectedMunicipios.has(m));
+            });
+
+            // Recalculate S-row totals for municipality-based tipos
+            // (these have N rows with municipality subtipos)
+            const MUN_TIPOS = ['RECEITA BRUTA', 'IMPOSTO', 'RECEITA LÍQUIDA',
+                'CSP', 'CUSTO DO SERVIÇO - MERCADO EXTERNO', 'CUSTO DO SERVIÇO - MÉDICOS',
+                'MARGEM BRUTA'];
+
+            MUN_TIPOS.forEach(tipo => {
+                const sRow = rows.find(r => r.agrupador === 'S' && r.tipo === tipo);
+                if (!sRow) return;
+                const nRows = rows.filter(r => r.agrupador === 'N' && r.tipo === tipo);
+                sRow.total_prev = 0; sRow.total_real = 0;
+                sRow.emp_prev = {}; sRow.emp_real = {};
+                nRows.forEach(n => {
+                    sRow.total_prev += (n.total_prev || 0);
+                    sRow.total_real += (n.total_real || 0);
+                    for (const [e, v] of Object.entries(n.emp_prev || {})) {
+                        sRow.emp_prev[e] = (sRow.emp_prev[e] || 0) + v;
+                    }
+                    for (const [e, v] of Object.entries(n.emp_real || {})) {
+                        sRow.emp_real[e] = (sRow.emp_real[e] || 0) + v;
+                    }
+                });
+            });
+
+            // Recalculate derived S-rows (formula-based, no municipality N rows)
+            const _findS = tipo => rows.find(r => r.agrupador === 'S' && r.tipo === tipo);
+            const _subRow = (target, a, b) => {
+                if (!target || !a) return;
+                const allE = new Set([...Object.keys(a.emp_prev||{}), ...Object.keys(b?.emp_prev||{})]);
+                target.total_prev = a.total_prev - (b?.total_prev || 0);
+                target.total_real = a.total_real - (b?.total_real || 0);
+                target.emp_prev = {}; target.emp_real = {};
+                allE.forEach(e => {
+                    target.emp_prev[e] = (a.emp_prev?.[e]||0) - (b?.emp_prev?.[e]||0);
+                    target.emp_real[e] = (a.emp_real?.[e]||0) - (b?.emp_real?.[e]||0);
+                });
+            };
+            const _subMulti = (target, base, ...subs) => {
+                if (!target || !base) return;
+                const allE = new Set(Object.keys(base.emp_prev||{}));
+                subs.forEach(s => { if(s) Object.keys(s.emp_prev||{}).forEach(e => allE.add(e)); });
+                target.total_prev = base.total_prev; target.total_real = base.total_real;
+                target.emp_prev = {...(base.emp_prev||{})}; target.emp_real = {...(base.emp_real||{})};
+                subs.forEach(s => {
+                    if (!s) return;
+                    target.total_prev -= s.total_prev; target.total_real -= s.total_real;
+                    allE.forEach(e => {
+                        target.emp_prev[e] = (target.emp_prev[e]||0) - (s.emp_prev?.[e]||0);
+                        target.emp_real[e] = (target.emp_real[e]||0) - (s.emp_real?.[e]||0);
+                    });
+                });
+            };
+
+            const _mb = _findS('MARGEM BRUTA'), _ga = _findS('GASTO ADM');
+            const _ebt = _findS('EBTIDA');
+            const _end = _findS('ENDIVIDAMENTO'), _inv = _findS('INVESTIMENTO');
+            const _dist = _findS('DISTRIBUIÇÕES DE LUCROS');
+            const _ll = _findS('LUCRO LÍQUIDO'), _llf = _findS('LUCRO LÍQUIDO FINAL');
+
+            _subRow(_ebt, _mb, _ga);       // EBTIDA = MB - GA
+            _subMulti(_ll, _ebt, _end, _inv); // LL = EBTIDA - END - INV
+            _subRow(_llf, _ll, _dist);     // LLF = LL - DIST
+        }
+
+        // ---------- 2b. Enterprise filter ----------
+        if (selectedEmpresas.size > 0) {
+            rows = rows.map(r => {
+                let newPrev = 0, newReal = 0;
+                const newEmpPrev = {}, newEmpReal = {};
+                selectedEmpresas.forEach(id => {
+                    const vp = r.emp_prev[id] || 0;
+                    const vr = r.emp_real[id] || 0;
+                    if (vp) { newEmpPrev[id] = vp; newPrev += vp; }
+                    if (vr) { newEmpReal[id] = vr; newReal += vr; }
+                });
+                return { ...r, total_prev: newPrev, total_real: newReal,
+                         valor_previsto: newPrev, valor_realizado: newReal,
+                         emp_prev: newEmpPrev, emp_real: newEmpReal };
             });
         }
-        if (selectedEmpresas.size > 0) {
-            data = data.filter(r => selectedEmpresas.has(String(r.CODEMP)));
-        }
-        return data;
+
+        // Recalculate indicadores after aggregation/filtering
+        const findS = (tipo) => rows.find(r => r.agrupador === 'S' && r.tipo === tipo);
+        const rb = findS('RECEITA BRUTA');
+        const rl = findS('RECEITA LÍQUIDA');
+        if (rb) rb.indicador = 1.0;
+        if (rl) rl.indicador = 1.0;
+        const imp = findS('IMPOSTO');
+        if (imp && rb && rb.total_prev) imp.indicador = imp.total_prev / rb.total_prev;
+        const rlPrev = rl ? rl.total_prev : 0;
+        ['CSP', 'CUSTO DO SERVIÇO - MÉDICOS', 'CUSTO DO SERVIÇO - MERCADO EXTERNO',
+         'MARGEM BRUTA', 'CUSTO FIXO', 'CUSTO VARIAVEL',
+         'DESPESA FIXA', 'DESPESA VARIAVEL', 'GASTO ADM', 'EBTIDA',
+         'ENDIVIDAMENTO', 'INVESTIMENTO', 'DISTRIBUIÇÕES DE LUCROS',
+         'LUCRO LÍQUIDO', 'LUCRO LÍQUIDO FINAL'].forEach(tipo => {
+            const row = findS(tipo);
+            if (row && rlPrev) row.indicador = row.total_prev / rlPrev;
+        });
+
+        return rows;
     }
 
     function applyFilters() {
         if (!dreData.length) return;
 
-        // Re-derive empresas (table columns) from filtered data
         const filtered = getFilteredData();
-        const empMap = new Map();
+
+        // Derive visible empresas from filtered data
+        const visibleEmpIds = new Set();
         filtered.forEach(r => {
-            const id = String(r.CODEMP);
-            if (!empMap.has(id)) {
-                empMap.set(id, r.NOMEFANTASIA || `EMP ${r.CODEMP}`);
-            }
+            Object.keys(r.emp_prev || {}).forEach(id => visibleEmpIds.add(id));
+            Object.keys(r.emp_real || {}).forEach(id => visibleEmpIds.add(id));
         });
-        empresas = Array.from(empMap.entries())
-            .map(([id, name]) => ({ id, name }))
+
+        empresas = tabelaEmpresas
+            .filter(e => visibleEmpIds.has(String(e.id)))
+            .map(e => ({ id: String(e.id), name: e.name }))
             .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
         renderSummary();
@@ -2125,6 +2295,11 @@
     // ======================================================================
     // Load data from API
     // ======================================================================
+    let allTabelaRows = [];   // pre-pivoted rows from /dre/v1/tabela (all comps)
+    let tabelaEmpresas = [];  // empresas list from API response
+    let tabelaMunEmpMap = {}; // municipio→[empresas] from API response
+    let subtipoMunLookup = {}; // subtipo→[municipios] mapping for filter de-para
+
     async function loadDRE() {
         const url = document.getElementById('apiUrl').value.replace(/\/+$/, '');
         const key = document.getElementById('apiKey').value;
@@ -2136,7 +2311,7 @@
         console.log('[DRE] loadDRE start', { url });
 
         try {
-            const resp = await fetch(`${url}/sankhya/dre/v1/gold`, {
+            const resp = await fetch(`${url}/sankhya/dre/v1/tabela`, {
                 headers: { 'X-API-Key': key }
             });
 
@@ -2147,10 +2322,14 @@
                 throw new Error(err.detail || `HTTP ${resp.status}`);
             }
 
-            allRawData = await resp.json();
-            console.log('[DRE] records received:', allRawData.length);
+            const body = await resp.json();
+            console.log('[DRE] tabela response:', body.rows?.length, 'rows,', body.empresas?.length, 'empresas');
 
-            if (!allRawData.length) {
+            tabelaEmpresas = body.empresas || [];
+            tabelaMunEmpMap = body.municipio_empresa_map || {};
+            allTabelaRows = body.rows || [];
+
+            if (!allTabelaRows.length) {
                 showStatus('info', 'Nenhum dado retornado. Verifique se o pipeline DRE foi executado no Dagster.');
                 document.getElementById('content').innerHTML = '';
                 document.getElementById('summaryBar').style.display = 'none';
@@ -2158,17 +2337,54 @@
                 return;
             }
 
-            // Normalize COMPETENCIA in all records
-            allRawData.forEach(r => {
+            // Normalize COMPETENCIA in all records + add compatibility aliases
+            allTabelaRows.forEach(r => {
                 r._comp = normalizeComp(r.COMPETENCIA);
+                // Aliases for cube/charts compatibility
+                r.valor_previsto = r.total_prev || 0;
+                r.valor_realizado = r.total_real || 0;
                 if (r.pagamentos) {
                     r.pagamentos.forEach(p => { p._comp = normalizeComp(p.COMPETENCIA); });
                 }
             });
 
             // Discover available competencias for calendar
-            allCompetencias = [...new Set(allRawData.map(r => r._comp).filter(Boolean))].sort();
+            allCompetencias = [...new Set(allTabelaRows.map(r => r._comp).filter(Boolean))].sort();
             renderCalGrid();
+
+            // CSP Contratos data comes from the same API response
+            if (body.csp_contratos && body.csp_contratos.length > 0) {
+                console.log('[CSP] records from API:', body.csp_contratos.length);
+                // Aggregate across months: group by tipo_linha|centro_custo|grupo|subcategoria
+                const cspMap = new Map();
+                body.csp_contratos.forEach(r => {
+                    const k = `${r.tipo_linha}|${r.centro_custo}|${r.grupo}|${r.subcategoria}`;
+                    if (!cspMap.has(k)) {
+                        cspMap.set(k, { tipo_linha: r.tipo_linha, centro_custo: r.centro_custo,
+                            grupo: r.grupo, grupo_ordem: r.grupo_ordem,
+                            subcategoria: r.subcategoria, sub_ordem: r.sub_ordem,
+                            municipio: r.municipio ?? null,
+                            mes_total: 0, emp_real: {} });
+                    }
+                    const entry = cspMap.get(k);
+                    entry.mes_total += (r.mes_total || 0);
+                    // Soma emp_real por empresa
+                    if (r.emp_real) {
+                        for (const [eid, val] of Object.entries(r.emp_real)) {
+                            entry.emp_real[eid] = (entry.emp_real[eid] || 0) + (val || 0);
+                        }
+                    }
+                });
+                cspContratosData = [...cspMap.values()];
+                const withMun = cspContratosData.filter(r => r.municipio).length;
+                console.log('[CSP] aggregated:', cspContratosData.length, 'entries,', withMun, 'with municipio field');
+            }
+
+            // ME Componentes data
+            if (body.me_componentes) {
+                meComponentes = body.me_componentes;
+                console.log('[ME] componentes:', Object.keys(meComponentes).length, 'municípios');
+            }
 
             // Apply competencia filter
             refilterByComp();
@@ -2182,12 +2398,10 @@
         }
     }
 
-    let allRawData = []; // full unfiltered dataset
-
     /** Re-filter dreData by selected competencias and re-render everything */
     function refilterByComp() {
         if (calSelectedComps.size > 0) {
-            dreData = allRawData.filter(r => calSelectedComps.has(r._comp));
+            dreData = allTabelaRows.filter(r => calSelectedComps.has(r._comp));
             if (!dreData.length) {
                 showStatus('info', `Nenhum dado para as competências selecionadas.`);
                 document.getElementById('content').innerHTML = '';
@@ -2196,21 +2410,16 @@
                 return;
             }
         } else {
-            dreData = [...allRawData];
+            dreData = [...allTabelaRows];
         }
 
-        // Discover companies
-        const empMap = new Map();
-        dreData.forEach(r => {
-            if (!empMap.has(r.CODEMP)) {
-                empMap.set(r.CODEMP, r.NOMEFANTASIA || `EMP ${r.CODEMP}`);
-            }
-        });
-        empresas = Array.from(empMap.entries())
-            .map(([id, name]) => ({ id, name }))
-            .sort((a, b) => a.id - b.id);
+        // Use empresas from API response (already available)
+        empresas = tabelaEmpresas
+            .map(e => ({ id: String(e.id), name: e.name }))
+            .sort((a, b) => a.id.localeCompare(b.id));
 
         populateFilters();
+        buildSubtipoMunLookup(dreData);
         applyFilters();
         renderCube();
         document.getElementById('cubeContainer').classList.add('visible');
@@ -2222,34 +2431,35 @@
     // Summary cards
     // ======================================================================
     function renderSummary() {
-        const filtered = getFilteredData();
-        const summaries = filtered.filter(r => r.agrupador === 'S');
+        const rows = getFilteredData();
+        const sRows = rows.filter(r => r.agrupador === 'S');
 
-        const getP = (tipo) => summaries.filter(r => r.tipo === tipo).reduce((a, r) => a + (r.valor_previsto || 0), 0);
-        const getR = (tipo) => summaries.filter(r => r.tipo === tipo).reduce((a, r) => a + (r.valor_realizado || 0), 0);
+        const find = (tipo) => sRows.find(r => r.tipo === tipo) || { total_prev: 0, total_real: 0 };
 
-        const receitaP = getP('RECEITA BRUTA'),  receitaR = getR('RECEITA BRUTA');
-        const margemP  = getP('MARGEM BRUTA'),   margemR  = getR('MARGEM BRUTA');
-        const ebtidaP  = getP('EBTIDA'),         ebtidaR  = getR('EBTIDA');
-        const lucroP   = getP('LUCRO LÍQUIDO FINAL'), lucroR = getR('LUCRO LÍQUIDO FINAL');
+        const rb = find('RECEITA BRUTA');
+        const mb = find('MARGEM BRUTA');
+        const eb = find('EBTIDA');
+        const lf = find('LUCRO LÍQUIDO FINAL');
+        const rl = find('RECEITA LÍQUIDA');
 
-        document.getElementById('sumReceitaP').textContent = fmtBRL(receitaP);
-        document.getElementById('sumReceitaR').textContent = fmtBRL(receitaR);
-        document.getElementById('sumMargemP').textContent  = fmtBRL(margemP);
-        document.getElementById('sumMargemR').textContent  = fmtBRL(margemR);
-        document.getElementById('sumEbtidaP').textContent  = fmtBRL(ebtidaP);
-        document.getElementById('sumEbtidaR').textContent  = fmtBRL(ebtidaR);
-        document.getElementById('sumLucroP').textContent   = fmtBRL(lucroP);
-        document.getElementById('sumLucroR').textContent   = fmtBRL(lucroR);
+        document.getElementById('sumReceitaP').textContent = fmtBRL(rb.total_prev);
+        document.getElementById('sumReceitaR').textContent = fmtBRL(rb.total_real);
+        document.getElementById('sumMargemP').textContent  = fmtBRL(mb.total_prev);
+        document.getElementById('sumMargemR').textContent  = fmtBRL(mb.total_real);
+        document.getElementById('sumEbtidaP').textContent  = fmtBRL(eb.total_prev);
+        document.getElementById('sumEbtidaR').textContent  = fmtBRL(eb.total_real);
+        document.getElementById('sumLucroP').textContent   = fmtBRL(lf.total_prev);
+        document.getElementById('sumLucroR').textContent   = fmtBRL(lf.total_real);
 
-        const pctP = (v) => receitaP ? `P: ${((v/receitaP)*100).toFixed(1)}%` : '';
-        const pctR = (v) => receitaR ? `R: ${((v/receitaR)*100).toFixed(1)}%` : '';
+        // Indicadores: % sobre Receita Líquida
+        const pctP = (v) => rl.total_prev ? `P: ${((v/rl.total_prev)*100).toFixed(1)}%` : '';
+        const pctR = (v) => rl.total_real ? `R: ${((v/rl.total_real)*100).toFixed(1)}%` : '';
         const pctBoth = (vp, vr) => [pctP(vp), pctR(vr)].filter(Boolean).join(' | ');
 
         document.getElementById('sumReceitaInd').textContent = '';
-        document.getElementById('sumMargemInd').textContent  = pctBoth(margemP, margemR);
-        document.getElementById('sumEbtidaInd').textContent  = pctBoth(ebtidaP, ebtidaR);
-        document.getElementById('sumLucroInd').textContent   = pctBoth(lucroP, lucroR);
+        document.getElementById('sumMargemInd').textContent  = pctBoth(mb.total_prev, mb.total_real);
+        document.getElementById('sumEbtidaInd').textContent  = pctBoth(eb.total_prev, eb.total_real);
+        document.getElementById('sumLucroInd').textContent   = pctBoth(lf.total_prev, lf.total_real);
 
         document.getElementById('summaryBar').style.display = 'grid';
     }
@@ -2263,41 +2473,8 @@
         // Show DRE action bar
         document.getElementById('dreActionBar').style.display = 'flex';
 
-        // Pivot: key → { emp_prev, emp_real, total_prev, total_real, pagamentos }
-        const pivot = {};
-        const filtered = getFilteredData();
-
-        filtered.forEach(row => {
-            const key = `${row.ordem}|${row.agrupador}|${row.tipo}|${row.subtipo}`;
-            if (!pivot[key]) {
-                pivot[key] = {
-                    ordem: row.ordem,
-                    agrupador: row.agrupador,
-                    tipo: row.tipo,
-                    subtipo: row.subtipo,
-                    indicador: row.indicador || 0,
-                    emp_prev: {},
-                    emp_real: {},
-                    total_prev: 0,
-                    total_real: 0,
-                    pagamentos: [],
-                };
-            }
-            const vp = row.valor_previsto || 0;
-            const vr = row.valor_realizado || 0;
-            const empKey = String(row.CODEMP);
-            pivot[key].emp_prev[empKey] = (pivot[key].emp_prev[empKey] || 0) + vp;
-            pivot[key].emp_real[empKey] = (pivot[key].emp_real[empKey] || 0) + vr;
-            pivot[key].total_prev += vp;
-            pivot[key].total_real += vr;
-
-            if (row.pagamentos && row.pagamentos.length) {
-                pivot[key].pagamentos.push(...row.pagamentos);
-            }
-        });
-
-        // Sort
-        const rows = Object.values(pivot).sort((a, b) => {
+        // Get pre-aggregated, filtered rows from getFilteredData()
+        const rows = getFilteredData().sort((a, b) => {
             if (a.ordem !== b.ordem) return a.ordem - b.ordem;
             if (a.agrupador !== b.agrupador) return a.agrupador === 'S' ? -1 : 1;
             return (a.subtipo || '').localeCompare(b.subtipo || '', 'pt-BR');
@@ -2320,13 +2497,23 @@
         html += '</tr></thead><tbody>';
 
         // ---- Build rows ----
+        const filteredCsp = getFilteredCspContratos();
         let rowIdx = 0;
+
         rows.forEach(row => {
             const isSec = row.agrupador === 'S';
             const isCalc = CALCULATED_TYPES.has(row.tipo);
             const ordem = Number(row.ordem);
+            const isCSP = row.tipo === 'CSP';
+            const isMedicos = row.tipo === 'CUSTO DO SERVIÇO - MÉDICOS';
+            const isME = row.tipo === 'CUSTO DO SERVIÇO - MERCADO EXTERNO';
+
+            // SKIP original CSP detail rows from DRE — they are replaced by contratos data
+            if (!isSec && isCSP && filteredCsp.length > 0) return;
+
             const hasDetails = !isSec ? false : rows.some(r => Number(r.ordem) === ordem + 1 && r.agrupador === 'N');
-            const hasPag = !isSec && row.pagamentos.length > 0;
+            const hasPag = !isSec && (row.pagamentos || []).length > 0;
+            const hasMeComps = !isSec && isME && meComponentes[row.subtipo];
             const rid = `row-${rowIdx}`;
             rowIdx++;
 
@@ -2335,26 +2522,34 @@
             else if (isSec) trClass = 'section-row';
             else trClass = 'detail-row hidden';
 
+            // For CSP section, hasDetails comes from contratos data
+            const cspHasDetails = isSec && isCSP && filteredCsp.length > 0;
+            const effectiveHasDetails = (isSec && isCSP) ? cspHasDetails : hasDetails;
+
             const onclick = isSec
                 ? `onclick="toggleSection(${ordem})"`
-                : (hasPag ? `onclick="togglePayments('${rid}')"` : '');
+                : ((hasPag || hasMeComps) ? `onclick="togglePayments('${rid}')"` : '');
             const dataSec = !isSec ? `data-section="${ordem - 1}"` : '';
 
             html += `<tr class="${trClass}" ${onclick} ${dataSec} id="${isSec ? 'sec-' + ordem : rid}">`;
 
             // Col: toggle icon
-            if (isSec && hasDetails) {
+            if (isSec && effectiveHasDetails) {
                 html += '<td><span class="toggle-icon collapsed">▶</span></td>';
-            } else if (!isSec && hasPag) {
+            } else if (!isSec && (hasPag || hasMeComps)) {
                 html += `<td><span class="toggle-icon collapsed pag-toggle" data-target="${rid}">▶</span></td>`;
             } else {
                 html += '<td></td>';
             }
 
-            // Col: name
+            // Col: name — rename CSP and MEDICOS sections
             const rawName = isSec ? row.tipo : row.subtipo;
-            const name = TIPO_DISPLAY[rawName] || rawName;
-            const badge = hasPag ? `<span class="pag-badge">${row.pagamentos.length} pag</span>` : '';
+            let name;
+            if (isSec && isCSP) name = 'Custo do Serviço — Gasto por Contratos';
+            else if (isSec && isME) name = 'Custo do Serviço — Mercado Externo';
+            else if (isSec && isMedicos) name = 'Custo do Serviço — Médicos';
+            else name = TIPO_DISPLAY[rawName] || rawName;
+            const badge = hasPag ? `<span class="pag-badge">${(row.pagamentos || []).length} pag</span>` : '';
             const infoBtn = isSec ? `<button class="origin-info-icon" onclick="event.stopPropagation();openOriginModal('${row.tipo.replace(/'/g, "\\'")}','${row.agrupador}',${row.total_prev},${row.total_real},${row.indicador || 0})" title="Ver origem e cálculo">i</button>` : '';
             html += `<td>${name}${badge}${infoBtn}</td>`;
 
@@ -2380,11 +2575,11 @@
             // Cols: per company
             empresas.forEach(emp => {
                 if (cfg.emp_prev) {
-                    const v = row.emp_prev[emp.id] || 0;
+                    const v = (row.emp_prev || {})[emp.id] || 0;
                     html += `<td class="td-prev ${valClass(v)}">${fmtBRL(v)}</td>`;
                 }
                 if (cfg.emp_real) {
-                    const v = row.emp_real[emp.id] || 0;
+                    const v = (row.emp_real || {})[emp.id] || 0;
                     html += `<td class="td-real ${valClass(v)}">${fmtBRL(v)}</td>`;
                 }
             });
@@ -2393,7 +2588,7 @@
 
             // ---- Payment rows (hidden by default) ----
             if (hasPag) {
-                row.pagamentos.forEach(pag => {
+                (row.pagamentos || []).forEach(pag => {
                     html += `<tr class="payment-row hidden" data-payments="${rid}">`;
                     html += '<td></td>';
                     const pagDesc = pag.DESCRNAT || pag.DESCRCENCUS || '—';
@@ -2427,6 +2622,189 @@
                     html += '</tr>';
                 });
             }
+
+            // ---- ME Componentes: sub-rows for each ME municipality ----
+            if (hasMeComps) {
+                // me_componentes stores MONTHLY values; multiply by selected comps count
+                const meCompCount = dreData.filter(r =>
+                    r.tipo === 'CUSTO DO SERVIÇO - MERCADO EXTERNO' &&
+                    r.agrupador === 'N' && r.subtipo === row.subtipo
+                ).length || 1;
+                const comps = meComponentes[row.subtipo];
+                comps.forEach((c, ci) => {
+                    const cVal = c.valor * meCompCount;
+                    const compId = `${rid}-comp-${ci}`;
+                    const hasLanc = c.lancamentos && c.lancamentos.length > 0;
+                    const compClick = hasLanc ? `onclick="event.stopPropagation(); togglePayments('${compId}')"` : '';
+                    html += `<tr class="payment-row hidden" data-payments="${rid}" id="${compId}" ${compClick}>`;
+                    if (hasLanc) {
+                        html += `<td><span class="toggle-icon collapsed pag-toggle" data-target="${compId}" style="font-size:0.65em;margin-left:8px">▶</span></td>`;
+                    } else {
+                        html += '<td></td>';
+                    }
+                    html += `<td style="padding-left:24px;color:var(--text-secondary);${hasLanc ? 'cursor:pointer;' : ''}">${c.desc}</td>`;
+                    if (cfg.indicator) html += '<td class="indicator"></td>';
+                    if (cfg.total_prev) html += `<td class="td-prev ${valClass(cVal)}">${fmtBRL(cVal)}</td>`;
+                    if (cfg.total_real) html += `<td class="td-real ${valClass(cVal)}">${fmtBRL(cVal)}</td>`;
+                    if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
+                    if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
+                    empresas.forEach(() => {
+                        if (cfg.emp_prev) html += '<td class="td-prev"></td>';
+                        if (cfg.emp_real) html += '<td class="td-real"></td>';
+                    });
+                    html += '</tr>';
+
+                    // ---- Level 4: lancamentos + explicacao ----
+                    if (hasLanc) {
+                        // Explicacao row
+                        if (c.explicacao) {
+                            const colSpan = 2 + (cfg.indicator ? 1 : 0)
+                                + (cfg.total_prev ? 1 : 0) + (cfg.total_real ? 1 : 0)
+                                + (isSingleMonth && cfg.total_prev_ano ? 1 : 0)
+                                + (isSingleMonth && cfg.total_real_ano ? 1 : 0)
+                                + empresas.length * ((cfg.emp_prev ? 1 : 0) + (cfg.emp_real ? 1 : 0));
+                            html += `<tr class="payment-row me-detail-row hidden" data-payments="${compId}">`;
+                            html += `<td colspan="${colSpan}" style="padding:8px 12px 8px 40px;font-size:0.82em;color:var(--text-secondary);font-style:italic;background:var(--bg-secondary);border-left:3px solid var(--border-color);">`;
+                            html += `📝 ${c.explicacao}`;
+                            html += '</td></tr>';
+                        }
+                        // Lancamento rows
+                        c.lancamentos.forEach(l => {
+                            const lVal = l.valor != null ? l.valor * meCompCount : null;
+                            html += `<tr class="payment-row me-detail-row hidden" data-payments="${compId}">`;
+                            html += '<td></td>';
+                            html += `<td style="padding-left:40px;font-size:0.82em;color:var(--text-secondary);">${l.desc}${l.texto ? ' <strong>' + l.texto + '</strong>' : ''}</td>`;
+                            if (cfg.indicator) html += '<td></td>';
+                            if (cfg.total_prev) html += `<td class="td-prev" style="font-size:0.82em;">${lVal != null ? fmtBRL(lVal) : ''}</td>`;
+                            if (cfg.total_real) html += `<td class="td-real" style="font-size:0.82em;">${lVal != null ? fmtBRL(lVal) : ''}</td>`;
+                            if (isSingleMonth && cfg.total_prev_ano) html += '<td></td>';
+                            if (isSingleMonth && cfg.total_real_ano) html += '<td></td>';
+                            empresas.forEach(() => {
+                                if (cfg.emp_prev) html += '<td></td>';
+                                if (cfg.emp_real) html += '<td></td>';
+                            });
+                            html += '</tr>';
+                        });
+                    }
+                });
+            }
+
+            // ---- CSP Contratos: inject centros de custo as detail-rows after CSP section ----
+            if (isSec && isCSP && filteredCsp.length > 0) {
+                // Group contratos by centro_custo
+                const centroMap = new Map();
+                filteredCsp.forEach(r => {
+                    const cc = r.centro_custo || '(vazio)';
+                    if (!centroMap.has(cc)) centroMap.set(cc, []);
+                    centroMap.get(cc).push(r);
+                });
+                const sortedCentros = [...centroMap.keys()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+                sortedCentros.forEach(centro => {
+                    const centroRows = centroMap.get(centro);
+                    const centroTotalRow = centroRows.find(r => r.tipo_linha === 'C');
+                    const centroTotal = centroTotalRow ? centroTotalRow.mes_total : 0;
+                    const subRows = centroRows.filter(r => r.tipo_linha !== 'C');
+                    const cspRid = `csp-${rowIdx}`;
+                    rowIdx++;
+
+                    // Centro row (like a detail-row, expandable)
+                    html += `<tr class="detail-row hidden" data-section="${ordem}" id="${cspRid}"`;
+                    html += subRows.length > 0 ? ` onclick="togglePayments('${cspRid}')" style="cursor:pointer;">` : '>';
+
+                    // Col: toggle icon
+                    if (subRows.length > 0) {
+                        html += `<td><span class="toggle-icon collapsed pag-toggle" data-target="${cspRid}">▶</span></td>`;
+                    } else {
+                        html += '<td></td>';
+                    }
+
+                    // Col: name
+                    html += `<td>${centro}<span class="pag-badge">${subRows.length} itens</span></td>`;
+
+                    // Col: indicator
+                    if (cfg.indicator) html += '<td class="indicator"></td>';
+
+                    // Col: total previsto (contratos only has realizado)
+                    if (cfg.total_prev) html += '<td class="td-prev"></td>';
+
+                    // Col: total realizado
+                    if (cfg.total_real) html += `<td class="td-real ${valClass(centroTotal)}">${fmtBRL(centroTotal)}</td>`;
+
+                    // Col: annual projections
+                    if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
+                    if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
+
+                    // Cols: per company
+                    empresas.forEach(emp => {
+                        if (cfg.emp_prev) html += '<td class="td-prev"></td>';
+                        if (cfg.emp_real) {
+                            const v = (centroTotalRow?.emp_real || {})[emp.id] || 0;
+                            html += `<td class="td-real ${valClass(v)}">${v ? fmtBRL(v) : ''}</td>`;
+                        }
+                    });
+
+                    html += '</tr>';
+
+                    // Sub-rows: grupo → subcategoria
+                    if (subRows.length > 0) {
+                        const grupoMap = new Map();
+                        subRows.forEach(r => {
+                            const g = r.grupo || '(sem grupo)';
+                            if (!grupoMap.has(g)) grupoMap.set(g, []);
+                            grupoMap.get(g).push(r);
+                        });
+                        const sortedGroups = [...grupoMap.entries()].sort((a, b) =>
+                            (a[1][0]?.grupo_ordem || 99) - (b[1][0]?.grupo_ordem || 99));
+
+                        for (const [grupo, gRows] of sortedGroups) {
+                            if (grupo === 'TOTAL CENTRO') continue;
+                            const grupoRow = gRows.find(r => r.tipo_linha === 'G');
+                            const gTotal = grupoRow ? grupoRow.mes_total : 0;
+
+                            // Grupo header
+                            html += `<tr class="payment-row hidden" data-payments="${cspRid}" style="background:var(--bg-hover);">`;
+                            html += '<td></td>';
+                            html += `<td style="font-weight:600;padding-left:24px;">${grupo}</td>`;
+                            if (cfg.indicator) html += '<td></td>';
+                            if (cfg.total_prev) html += '<td class="td-prev"></td>';
+                            if (cfg.total_real) html += `<td class="td-real ${valClass(gTotal)}">${fmtBRL(gTotal)}</td>`;
+                            if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
+                            if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
+                            empresas.forEach(emp => {
+                                if (cfg.emp_prev) html += '<td class="td-prev"></td>';
+                                if (cfg.emp_real) {
+                                    const v = (grupoRow?.emp_real || {})[emp.id] || 0;
+                                    html += `<td class="td-real ${valClass(v)}">${v ? fmtBRL(v) : ''}</td>`;
+                                }
+                            });
+                            html += '</tr>';
+
+                            // Subcategoria details
+                            const details = gRows.filter(r => r.tipo_linha === 'D').sort((a, b) => (a.sub_ordem || 0) - (b.sub_ordem || 0));
+                            details.forEach(d => {
+                                html += `<tr class="payment-row hidden" data-payments="${cspRid}">`;
+                                html += '<td></td>';
+                                html += `<td style="padding-left:40px;color:var(--text-secondary);">${d.subcategoria || '—'}</td>`;
+                                if (cfg.indicator) html += '<td></td>';
+                                if (cfg.total_prev) html += '<td class="td-prev"></td>';
+                                if (cfg.total_real) html += `<td class="td-real ${valClass(d.mes_total)}">${fmtBRL(d.mes_total)}</td>`;
+                                if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
+                                if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
+                                empresas.forEach(emp => {
+                                    if (cfg.emp_prev) html += '<td class="td-prev"></td>';
+                                    if (cfg.emp_real) {
+                                        const v = (d.emp_real || {})[emp.id] || 0;
+                                        html += `<td class="td-real ${valClass(v)}">${v ? fmtBRL(v) : ''}</td>`;
+                                    }
+                                });
+                                html += '</tr>';
+                            });
+                        }
+                    }
+                });
+            }
+
         });
 
         html += '</tbody></table>';
@@ -2436,18 +2814,40 @@
     // ======================================================================
     // Toggle sections & payments
     // ======================================================================
+    let cspContratosData = []; // CSP Contratos aggregated data
+    let meComponentes = {};     // ME componentes per municipality {mun: [{desc, valor}]}
+
+    // Returns CSP Contratos filtered by selected municipalities
+    // Uses 'municipio' field normalized in backend (gold_tabela.py)
+    function getFilteredCspContratos() {
+        const selectedMunicipios = msSelected.municipio;
+        if (selectedMunicipios.size === 0) return cspContratosData;
+
+        // Agora só mostra registros cujo municipio está no filtro (não mostra mais null)
+        return cspContratosData.filter(r => selectedMunicipios.has(r.municipio));
+    }
+
     function toggleSection(ordem) {
         const details = document.querySelectorAll(`tr[data-section="${ordem}"]`);
         const icon = document.querySelector(`#sec-${ordem} .toggle-icon`);
 
         details.forEach(tr => {
             tr.classList.toggle('hidden');
-            // When collapsing section, also collapse any open payments
+            // When collapsing section, also collapse any open payments (level 3 + 4)
             if (tr.classList.contains('hidden')) {
                 const rid = tr.id;
                 if (rid) {
                     const payRows = document.querySelectorAll(`tr[data-payments="${rid}"]`);
-                    payRows.forEach(p => p.classList.add('hidden'));
+                    payRows.forEach(p => {
+                        p.classList.add('hidden');
+                        // Cascade: also collapse level 4 (me-detail-rows)
+                        if (p.id) {
+                            const subRows = document.querySelectorAll(`tr[data-payments="${p.id}"]`);
+                            subRows.forEach(s => s.classList.add('hidden'));
+                            const subIcon = p.querySelector('.pag-toggle');
+                            if (subIcon) subIcon.classList.add('collapsed');
+                        }
+                    });
                     const payIcon = tr.querySelector('.pag-toggle');
                     if (payIcon) payIcon.classList.add('collapsed');
                 }
@@ -2459,7 +2859,16 @@
     function togglePayments(rid) {
         const payRows = document.querySelectorAll(`tr[data-payments="${rid}"]`);
         const icon = document.querySelector(`#${rid} .pag-toggle`);
-        payRows.forEach(p => p.classList.toggle('hidden'));
+        payRows.forEach(p => {
+            p.classList.toggle('hidden');
+            // When collapsing, cascade to nested sub-rows
+            if (p.classList.contains('hidden') && p.id) {
+                const subRows = document.querySelectorAll(`tr[data-payments="${p.id}"]`);
+                subRows.forEach(s => s.classList.add('hidden'));
+                const subIcon = p.querySelector('.pag-toggle');
+                if (subIcon) subIcon.classList.add('collapsed');
+            }
+        });
         if (icon) icon.classList.toggle('collapsed');
     }
 
@@ -2493,8 +2902,8 @@
     function getCubeDimValue(row, dim) {
         switch (dim) {
             case 'tipo':         return row.tipo || '(vazio)';
-            case 'empresa':      return row.NOMEFANTASIA || `EMP ${row.CODEMP}`;
-            case 'municipio':    return row.MUNICIPIO || '(vazio)';
+            case 'empresa':      return row.subtipo || row.tipo || '(vazio)';
+            case 'municipio':    return row.subtipo || '(vazio)';
             case 'competencia':  return row._comp || '(vazio)';
             default: return '?';
         }
@@ -3197,28 +3606,8 @@
         const filtered = getFilteredData();
         if (!filtered.length) return;
 
-        // Build same pivot as renderTable
-        const pivot = {};
-        filtered.forEach(row => {
-            const key = `${row.ordem}|${row.agrupador}|${row.tipo}|${row.subtipo}`;
-            if (!pivot[key]) {
-                pivot[key] = {
-                    ordem: row.ordem, agrupador: row.agrupador, tipo: row.tipo,
-                    subtipo: row.subtipo, indicador: row.indicador || 0,
-                    emp_prev: {}, emp_real: {},
-                    total_prev: 0, total_real: 0,
-                };
-            }
-            const vp = row.valor_previsto || 0;
-            const vr = row.valor_realizado || 0;
-            const empKey = String(row.CODEMP);
-            pivot[key].emp_prev[empKey] = (pivot[key].emp_prev[empKey] || 0) + vp;
-            pivot[key].emp_real[empKey] = (pivot[key].emp_real[empKey] || 0) + vr;
-            pivot[key].total_prev += vp;
-            pivot[key].total_real += vr;
-        });
-
-        const rows = Object.values(pivot).sort((a, b) => {
+        // Use pre-aggregated rows from getFilteredData()
+        const rows = getFilteredData().sort((a, b) => {
             if (a.ordem !== b.ordem) return a.ordem - b.ordem;
             if (a.agrupador !== b.agrupador) return a.agrupador === 'S' ? -1 : 1;
             return (a.subtipo || '').localeCompare(b.subtipo || '', 'pt-BR');
@@ -3291,10 +3680,16 @@
             source: 'Bronze → Silver → Gold (_calc_csp)',
             tag: 'source',
         },
+        'CUSTO DO SERVIÇO - MERCADO EXTERNO': {
+            formula: 'Σ custo ME por município = K (CSP×55%) + L (IG MUN) + M (CP MUN)',
+            desc: 'Custo de mercado externo por município. <strong>K</strong> = 55% da receita CSP; <strong>L</strong> = Intercoop Ganho Municipal (6 municípios); <strong>M</strong> = Custo Municipal (7 municípios). 9 municípios sem custo ME. Valores de referência do orçamento.',
+            source: 'Referência (DRE GERENCIAL) → Gold Tabela (_build_mercado_externo)',
+            tag: 'source',
+        },
         'MARGEM BRUTA': {
-            formula: 'RECEITA LÍQUIDA <span class="op">−</span> CSP',
-            desc: 'Também chamada de <strong>Margem de Contribuição</strong>. Receita Líquida menos os custos diretos do serviço prestado, por subtipo.',
-            source: 'Gold (_calc_margem_bruta)',
+            formula: 'RECEITA LÍQUIDA <span class="op">−</span> CSP <span class="op">−</span> MERCADO EXTERNO <span class="op">−</span> MÉDICOS',
+            desc: 'Também chamada de <strong>Margem de Contribuição</strong>. Receita Líquida menos todos os custos diretos: CSP (Custo do Serviço Prestado via contratos), Mercado Externo e Médicos Plantonistas.',
+            source: 'Gold (_recompute_calculated)',
             tag: 'calc',
         },
         'CUSTO FIXO': {
@@ -3417,8 +3812,8 @@
             detailRows.forEach(r => {
                 const st = r.subtipo || '(vazio)';
                 if (!subs[st]) subs[st] = { prev: 0, real: 0, count: 0, pags: [] };
-                subs[st].prev += (r.valor_previsto || 0);
-                subs[st].real += (r.valor_realizado || 0);
+                subs[st].prev += (r.total_prev || 0);
+                subs[st].real += (r.total_real || 0);
                 subs[st].count += 1;
                 if (r.pagamentos) subs[st].pags.push(...r.pagamentos);
             });
@@ -3628,8 +4023,8 @@
         const tipoMap = {};
         summaries.forEach(r => {
             if (!tipoMap[r.tipo]) tipoMap[r.tipo] = { prev: 0, real: 0, ordem: r.ordem, ind: r.indicador };
-            tipoMap[r.tipo].prev += (r.valor_previsto || 0);
-            tipoMap[r.tipo].real += (r.valor_realizado || 0);
+            tipoMap[r.tipo].prev += (r.total_prev || 0);
+            tipoMap[r.tipo].real += (r.total_real || 0);
         });
 
         ctx += `RESUMO POR TIPO (R$):\n`;
@@ -3642,21 +4037,20 @@
                 ctx += `${tipo.padEnd(30)} ${v.prev.toFixed(2).padStart(18)} ${v.real.toFixed(2).padStart(18)} ${pct.padStart(8)}\n`;
             });
 
-        // Per-empresa breakdown for key types
+        // Per-empresa breakdown for key types (from emp_real breakdown)
         ctx += `\nDETALHAMENTO POR EMPRESA (Realizado):\n`;
         const keyTypes = ['RECEITA BRUTA', 'CSP', 'MARGEM BRUTA', 'EBTIDA', 'LUCRO LÍQUIDO FINAL'];
+        const empNameMap = {};
+        tabelaEmpresas.forEach(e => { empNameMap[String(e.id)] = e.name; });
         keyTypes.forEach(tipo => {
-            const rows = filtered.filter(r => r.tipo === tipo && r.agrupador === 'S');
-            if (!rows.length) return;
+            const sRow = filtered.find(r => r.tipo === tipo && r.agrupador === 'S');
+            if (!sRow) return;
             ctx += `\n  ${tipo}:\n`;
-            const empTotals = {};
-            rows.forEach(r => {
-                const nm = r.NOMEFANTASIA || `EMP ${r.CODEMP}`;
-                empTotals[nm] = (empTotals[nm] || 0) + (r.valor_realizado || 0);
-            });
-            Object.entries(empTotals)
+            const empReals = sRow.emp_real || {};
+            Object.entries(empReals)
                 .sort((a, b) => b[1] - a[1])
-                .forEach(([nm, v]) => {
+                .forEach(([eid, v]) => {
+                    const nm = empNameMap[eid] || `EMP ${eid}`;
                     ctx += `    ${nm}: R$ ${v.toFixed(2)}\n`;
                 });
         });
@@ -3668,8 +4062,8 @@
         details.forEach(r => {
             const key = `${r.tipo} > ${r.subtipo}`;
             if (!subMap[key]) subMap[key] = { prev: 0, real: 0 };
-            subMap[key].prev += (r.valor_previsto || 0);
-            subMap[key].real += (r.valor_realizado || 0);
+            subMap[key].prev += (r.total_prev || 0);
+            subMap[key].real += (r.total_real || 0);
         });
         Object.entries(subMap)
             .sort((a, b) => Math.abs(b[1].real) - Math.abs(a[1].real))
@@ -3680,7 +4074,7 @@
 
         ctx += `\nFÓRMULAS DO DRE:\n`;
         ctx += `  RECEITA LÍQUIDA = RECEITA BRUTA - |IMPOSTO|\n`;
-        ctx += `  MARGEM BRUTA = RECEITA LÍQUIDA - CSP\n`;
+        ctx += `  MARGEM BRUTA = RECEITA LÍQUIDA - CSP - MERCADO EXTERNO - MÉDICOS\n`;
         ctx += `  GASTO ADM = CUSTO FIXO + CUSTO VARIAVEL + DESPESA FIXA + DESPESA VARIAVEL\n`;
         ctx += `  EBTIDA = MARGEM BRUTA - GASTO ADM\n`;
         ctx += `  LUCRO LÍQUIDO = EBTIDA - ENDIVIDAMENTO - INVESTIMENTO\n`;
