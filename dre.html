@@ -1194,11 +1194,11 @@
         <div class="controls">
             <div class="control-group">
                 <label>API URL</label>
-                <input type="text" id="apiUrl" value="https://api-dados.pluralmed.com.br" placeholder="http://localhost:8000">
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
             </div>
             <div class="control-group">
                 <label>API Key</label>
-                <input type="password" id="apiKey" value="" placeholder="X-API-Key">
+                <input type="password" id="apiKey" value="dev_admin_key_12345" placeholder="X-API-Key">
             </div>
             <div class="control-group">
                 <label>Competência</label>
@@ -2364,14 +2364,22 @@
                             grupo: r.grupo, grupo_ordem: r.grupo_ordem,
                             subcategoria: r.subcategoria, sub_ordem: r.sub_ordem,
                             municipio: r.municipio ?? null,
-                            mes_total: 0, emp_real: {} });
+                            mes_total: 0, emp_real: {},
+                            mes_previsto: 0, emp_prev: {} });
                     }
                     const entry = cspMap.get(k);
                     entry.mes_total += (r.mes_total || 0);
+                    entry.mes_previsto += (r.mes_previsto || 0);
                     // Soma emp_real por empresa
                     if (r.emp_real) {
                         for (const [eid, val] of Object.entries(r.emp_real)) {
                             entry.emp_real[eid] = (entry.emp_real[eid] || 0) + (val || 0);
+                        }
+                    }
+                    // Soma emp_prev por empresa
+                    if (r.emp_prev) {
+                        for (const [eid, val] of Object.entries(r.emp_prev)) {
+                            entry.emp_prev[eid] = (entry.emp_prev[eid] || 0) + (val || 0);
                         }
                     }
                 });
@@ -2725,8 +2733,11 @@
                     // Col: indicator
                     if (cfg.indicator) html += '<td class="indicator"></td>';
 
-                    // Col: total previsto (contratos only has realizado)
-                    if (cfg.total_prev) html += '<td class="td-prev"></td>';
+                    // Col: total previsto (mapeado de dre_pagamentos via DESCRCENCUS)
+                    if (cfg.total_prev) {
+                        const cpv = centroTotalRow?.mes_previsto || 0;
+                        html += `<td class="td-prev ${valClass(cpv)}">${cpv ? fmtBRL(cpv) : ''}</td>`;
+                    }
 
                     // Col: total realizado
                     if (cfg.total_real) html += `<td class="td-real ${valClass(centroTotal)}">${fmtBRL(centroTotal)}</td>`;
@@ -2737,7 +2748,10 @@
 
                     // Cols: per company
                     empresas.forEach(emp => {
-                        if (cfg.emp_prev) html += '<td class="td-prev"></td>';
+                        if (cfg.emp_prev) {
+                            const epv = (centroTotalRow?.emp_prev || {})[emp.id] || 0;
+                            html += `<td class="td-prev ${valClass(epv)}">${epv ? fmtBRL(epv) : ''}</td>`;
+                        }
                         if (cfg.emp_real) {
                             const v = (centroTotalRow?.emp_real || {})[emp.id] || 0;
                             html += `<td class="td-real ${valClass(v)}">${v ? fmtBRL(v) : ''}</td>`;
@@ -2767,7 +2781,10 @@
                             html += '<td></td>';
                             html += `<td style="font-weight:600;padding-left:24px;">${grupo}</td>`;
                             if (cfg.indicator) html += '<td></td>';
-                            if (cfg.total_prev) html += '<td class="td-prev"></td>';
+                            if (cfg.total_prev) {
+                                const v = grupoRow?.mes_previsto || 0;
+                                html += `<td class="td-prev ${valClass(v)}">${v ? fmtBRL(v) : ''}</td>`;
+                            }
                             if (cfg.total_real) html += `<td class="td-real ${valClass(gTotal)}">${fmtBRL(gTotal)}</td>`;
                             if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
                             if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
@@ -2787,7 +2804,10 @@
                                 html += '<td></td>';
                                 html += `<td style="padding-left:40px;color:var(--text-secondary);">${d.subcategoria || '—'}</td>`;
                                 if (cfg.indicator) html += '<td></td>';
-                                if (cfg.total_prev) html += '<td class="td-prev"></td>';
+                                if (cfg.total_prev) {
+                                    const v = d.mes_previsto || 0;
+                                    html += `<td class="td-prev ${valClass(v)}">${v ? fmtBRL(v) : ''}</td>`;
+                                }
                                 if (cfg.total_real) html += `<td class="td-real ${valClass(d.mes_total)}">${fmtBRL(d.mes_total)}</td>`;
                                 if (isSingleMonth && cfg.total_prev_ano) html += '<td class="td-prev"></td>';
                                 if (isSingleMonth && cfg.total_real_ano) html += '<td class="td-real"></td>';
